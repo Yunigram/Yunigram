@@ -631,14 +631,10 @@ public class NekoGeneralSettingsActivity extends BaseFragment {
                         textCell.setTextAndValue(LocaleController.getString("TranslatorType", R.string.TranslatorType), value, NekoConfig.transType != NekoConfig.TRANS_TYPE_EXTERNAL);
                     } else if (position == doNotTranslateRow) {
                         ArrayList<String> langCodes = getRestrictedLanguages();
-                        CharSequence value;
+                        String value;
                         if (langCodes.size() == 1) {
-                            Locale locale = Locale.forLanguageTag(langCodes.get(0));
-                            if (!TextUtils.isEmpty(locale.getScript())) {
-                                value = HtmlCompat.fromHtml(locale.getDisplayScript(), HtmlCompat.FROM_HTML_MODE_LEGACY);
-                            } else {
-                                value = locale.getDisplayName();
-                            }
+                            Locale l = Locale.forLanguageTag(langCodes.get(0));
+                            value = l.getDisplayName(l);
                         } else {
                             value = LocaleController.formatPluralString("Languages", langCodes.size());
                         }
