@@ -174,6 +174,10 @@ android {
     dependenciesInfo.includeInApk false
 }
 
+dependencies {
+    lspatchImplementation project(path: ':lspatch')
+}
+
 def patchBundleReleaseManifest = task('patchBundleReleaseManifest').doLast {
     def manifest = Paths.get(project.buildDir.path, 'intermediates',
             'bundle_manifest', 'release', 'AndroidManifest.xml')
