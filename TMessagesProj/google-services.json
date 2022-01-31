@@ -1,37 +1,41 @@
 {
   "project_info": {
-    "project_number": "551995224478",
-    "firebase_url": "https://nekogram-b43bb.firebaseio.com",
-    "project_id": "nekogram-b43bb",
-    "storage_bucket": "nekogram-b43bb.appspot.com"
+    "project_number": "1048457562775",
+    "project_id": "yum-dc27a",
+    "storage_bucket": "yum-dc27a.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:551995224478:android:3010b8545df7fa6e",
+        "mobilesdk_app_id": "1:1048457562775:android:6c20653efac08ffef537d2",
         "android_client_info": {
-          "package_name": "tw.nekomimi.nekogram"
+          "package_name": "icu.ketal.yunigram"
         }
       },
       "oauth_client": [
         {
-          "client_id": "551995224478-u59bvc0oqd8ma9499rvo9s5vvgofrd0f.apps.googleusercontent.com",
+          "client_id": "1048457562775-fmahprjki0iqv5lgco0de5ip17p2fmqd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "icu.ketal.yunigram",
+            "certificate_hash": "8be817fe3ef5d133ad25d0171942603b3401a629"
+          }
+        },
+        {
+          "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCGMAA5lSWvRAgaVtF1-Bh3Di07zePnUbA"
-        },
-        {
-          "current_key": "AIzaSyB1FZcptgvQQZcUrPV7cJmjG5zkbCWxiK0"
+          "current_key": "AIzaSyBgez4tQud9MgEeBWQtpYw8i-3x3jdf0ZY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "551995224478-u59bvc0oqd8ma9499rvo9s5vvgofrd0f.apps.googleusercontent.com",
+              "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
@@ -40,30 +44,109 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:551995224478:android:99f9755a158003cb3a268f",
+        "mobilesdk_app_id": "1:1048457562775:android:69571751298b6891f537d2",
         "android_client_info": {
-          "package_name": "tw.nekomimi.nekogram.beta"
+          "package_name": "icu.ketal.yunigram.beta"
         }
       },
       "oauth_client": [
         {
-          "client_id": "551995224478-u59bvc0oqd8ma9499rvo9s5vvgofrd0f.apps.googleusercontent.com",
+          "client_id": "1048457562775-0b702qkgdpetd3chusu0l0rdj9qg1079.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "icu.ketal.yunigram.beta",
+            "certificate_hash": "8be817fe3ef5d133ad25d0171942603b3401a629"
+          }
+        },
+        {
+          "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCGMAA5lSWvRAgaVtF1-Bh3Di07zePnUbA"
-        },
-        {
-          "current_key": "AIzaSyB1FZcptgvQQZcUrPV7cJmjG5zkbCWxiK0"
+          "current_key": "AIzaSyBgez4tQud9MgEeBWQtpYw8i-3x3jdf0ZY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "551995224478-u59bvc0oqd8ma9499rvo9s5vvgofrd0f.apps.googleusercontent.com",
+              "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1048457562775:android:0ece61c73593082df537d2",
+        "android_client_info": {
+          "package_name": "icu.ketal.yunigram.lspatch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1048457562775-9fgrpnpd4j97e1ni5lf5q9lbsvv3d6ee.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "icu.ketal.yunigram.lspatch",
+            "certificate_hash": "8be817fe3ef5d133ad25d0171942603b3401a629"
+          }
+        },
+        {
+          "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgez4tQud9MgEeBWQtpYw8i-3x3jdf0ZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1048457562775:android:828e7c68f7d4957df537d2",
+        "android_client_info": {
+          "package_name": "icu.ketal.yunigram.lspatch.beta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1048457562775-jd1lc63l1hpopr42pjo4pl0jfe65f282.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "icu.ketal.yunigram.lspatch.beta",
+            "certificate_hash": "8be817fe3ef5d133ad25d0171942603b3401a629"
+          }
+        },
+        {
+          "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgez4tQud9MgEeBWQtpYw8i-3x3jdf0ZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1048457562775-c5qioo5a76no2p1j98j4549s14vt06gd.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

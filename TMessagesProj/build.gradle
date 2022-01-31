@@ -58,7 +58,7 @@ android {
     buildToolsVersion '32.0.0'
     ndkVersion "21.4.7075529"
 
-    defaultConfig.applicationId = "tw.nekomimi.nekogram"
+    defaultConfig.applicationId = "icu.ketal.yunigram"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
@@ -120,7 +120,18 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles 'proguard-rules.pro'
-            ndk.debugSymbolLevel 'FULL'
+        }
+    }
+
+    flavorDimensions "version"
+    productFlavors {
+        normal {
+            dimension "version"
+        }
+        lspatch {
+            dimension "version"
+            applicationIdSuffix ".lspatch"
+            minSdkVersion 28
         }
     }
 
@@ -144,7 +155,7 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' // , "-DNDK_CCACHE=ccache"
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', "-DNDK_CCACHE=ccache"
             }
         }
     }
@@ -174,5 +185,5 @@ def patchBundleReleaseManifest = task('patchBundleReleaseManifest').doLast {
 }
 
 afterEvaluate {
-    tasks.getByName("processApplicationManifestReleaseForBundle").finalizedBy patchBundleReleaseManifest
+    tasks.getByName("processApplicationManifestNormalReleaseForBundle").finalizedBy patchBundleReleaseManifest
 }
