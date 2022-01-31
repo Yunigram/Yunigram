@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppNameNeko" translatable="false">@string/NekogramBeta</string>
+    <string name="AppNameYuni" translatable="false">@string/YunigramBeta</string>
 </resources>

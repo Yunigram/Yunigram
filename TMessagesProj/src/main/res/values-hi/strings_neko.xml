@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NekoSettings">नेको सेटिंग्स</string>
+    <string name="YuniSettings">नेको सेटिंग्स</string>
     <string name="IPv6">IPv6 से कनेक्ट करने का प्रयास करें</string>
     <string name="MessageMenu">संदेश मेनू</string>
     <string name="HidePhone">मेरा फोन नंबर छिपाएं</string>
@@ -21,7 +21,7 @@
     <string name="ForceTabletMode">फोर्स टैबलेट मोड</string>
     <string name="Prpr">पेरोपेरो</string>
     <string name="TransparentStatusBar">पारदर्शी स्टेटस बार</string>
-    <string name="NekogramRunning">नेकोग्राम चल रहा है</string>
+    <string name="YunigramRunning">नेकोग्राम चल रहा है</string>
     <string name="EventType">साइडबार आइकन सेट</string>
     <string name="ChristmasHat">हर रोज क्रिसमस टोपी दिखाएं</string>
     <string name="DependsOnDate">तारीख पर निर्भर करता है</string>

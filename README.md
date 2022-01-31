@@ -1,4 +1,4 @@
-# 🐾 Nekogram
+# Yunigram
 [![Crowdin](https://badges.crowdin.net/e/a094217ac83905ae1625526d59bba8dc/localized.svg)](https://neko.crowdin.com/nekogram)  
 Nekogram is a third-party Telegram client with not many but useful modifications.
 

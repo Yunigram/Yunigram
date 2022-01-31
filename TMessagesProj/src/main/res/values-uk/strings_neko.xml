@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NekoSettings">Налаштування Neko</string>
+    <string name="YuniSettings">Налаштування Neko</string>
     <string name="IPv6">Спробувати з\'єднуватись через IPv6</string>
     <string name="MessageMenu">Меню повідомлення</string>
     <string name="HidePhone">Заховати мій номер телефону</string>
@@ -23,7 +23,7 @@
     <string name="Prpr">Пероперо</string>
     <string name="TransparentStatusBar">Прозорий рядок стану</string>
     <string name="EnableResidentNotification">Включити сповіщення</string>
-    <string name="NekogramRunning">Некограм запущений</string>
+    <string name="YunigramRunning">Некограм запущений</string>
     <string name="EventType">Зображення бокової панелі</string>
     <string name="ChristmasHat">Відображати Різдвяний капелюх</string>
     <string name="DependsOnDate">Залежить від дати</string>
@@ -131,7 +131,7 @@
     <string name="WsEnableTls">Увімкнути TLS</string>
     <string name="WsLocalProxy">Локальне проксі</string>
     <string name="WsEnableDoh">Увімкнути DoH</string>
-    <string name="UpdateNekogram">Оновити Nekogram</string>
+    <string name="UpdateYunigram">Оновити Nekogram</string>
     <string name="TranslationTarget">Цільова мова</string>
     <string name="TranslationTargetApp">Мова додатку</string>
     <string name="Translator">Перекладач</string>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NekoSettings">Neko Ayarları</string>
+    <string name="YuniSettings">Neko Ayarları</string>
     <string name="IPv6">IPv6 aracılığıyla bağlanmayı dene</string>
     <string name="MessageMenu">Mesaj Menüsü</string>
     <string name="HidePhone">Telefon numaramı gizle</string>
@@ -23,7 +23,7 @@
     <string name="TransparentStatusBar">Saydam durum çubuğu</string>
     <string name="EnableResidentNotification">Kalıcı bildirim göster</string>
     <string name="DisableResidentNotification">Kalıcı bildirimi devre dışı bırak</string>
-    <string name="NekogramRunning">Nekogram çalışıyor</string>
+    <string name="YunigramRunning">Nekogram çalışıyor</string>
     <string name="EventType">Kenar çubuğu ikon ayarı</string>
     <string name="ChristmasHat">Her gün Noel şapkası göster</string>
     <string name="DependsOnDate">Tarihe bağlı</string>
@@ -129,7 +129,7 @@
     <string name="WsEnableTls">TLS\'yi etkinleştir</string>
     <string name="WsLocalProxy">Yerel proxy</string>
     <string name="WsEnableDoh">DoH\'u etkinleştir</string>
-    <string name="UpdateNekogram">Nekogram\'ı Güncelleştir</string>
+    <string name="UpdateYunigram">Nekogram\'ı Güncelleştir</string>
     <string name="TranslationTarget">Hedef dil</string>
     <string name="TranslationTargetApp">Uygulamayı takip et</string>
     <string name="Translator">Çevirmen</string>

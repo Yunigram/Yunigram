@@ -625,7 +625,7 @@ public class NekoGeneralSettingsActivity extends BaseFragment {
                                 break;
                             case NekoConfig.TRANS_TYPE_NEKO:
                             default:
-                                value = LocaleController.getString("TranslatorTypeNeko", R.string.TranslatorTypeNeko);
+                                value = LocaleController.getString("TranslatorTypeNeko", R.string.TranslatorTypeYuni);
                                 break;
                         }
                         textCell.setTextAndValue(LocaleController.getString("TranslatorType", R.string.TranslatorType), value, NekoConfig.transType != NekoConfig.TRANS_TYPE_EXTERNAL);

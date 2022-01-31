@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NekoSettings">喵设置</string>
+    <string name="YuniSettings">喵设置</string>
     <string name="IPv6">优先尝试使用 IPv6 连接</string>
     <string name="MessageMenu">消息菜单</string>
     <string name="HidePhone">隐藏您的手机号码</string>
@@ -24,7 +24,7 @@
     <string name="TransparentStatusBar">使用完全透明的状态栏</string>
     <string name="EnableResidentNotification">请让猫咪住在通知栏里吧</string>
     <string name="DisableResidentNotification">果然通知栏还是太挤了</string>
-    <string name="NekogramRunning">猫猫奔跑中</string>
+    <string name="YunigramRunning">猫猫奔跑中</string>
     <string name="EventType">抽屉图标集</string>
     <string name="ChristmasHat">每天显示圣诞帽</string>
     <string name="DependsOnDate">基于日期</string>
@@ -134,7 +134,7 @@
     <string name="WsEnableTls">启用 TLS</string>
     <string name="WsLocalProxy">本地代理</string>
     <string name="WsEnableDoh">启用 DoH</string>
-    <string name="UpdateNekogram">更新 Nekogram</string>
+    <string name="UpdateYunigram">更新 Nekogram</string>
     <string name="TranslationTarget">目标语言</string>
     <string name="TranslationTargetApp">跟随应用</string>
     <string name="Translator">翻译</string>

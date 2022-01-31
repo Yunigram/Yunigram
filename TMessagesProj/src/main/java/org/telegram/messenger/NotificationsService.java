@@ -28,7 +28,7 @@ public class NotificationsService extends Service {
 
         if (NekoConfig.residentNotification) {
             NotificationChannelCompat channel = new NotificationChannelCompat.Builder("nekogram", NotificationManagerCompat.IMPORTANCE_DEFAULT)
-                    .setName(LocaleController.getString("NekogramRunning", R.string.NekogramRunning))
+                    .setName(LocaleController.getString("NekogramRunning", R.string.YunigramRunning))
                     .setLightsEnabled(false)
                     .setVibrationEnabled(false)
                     .setSound(null, null)
@@ -41,7 +41,7 @@ public class NotificationsService extends Service {
                             .setColor(NekoConfig.getNotificationColor())
                             .setColorized(true)
                             .setShowWhen(false)
-                            .setContentText(LocaleController.getString("NekogramRunning", R.string.NekogramRunning))
+                            .setContentText(LocaleController.getString("NekogramRunning", R.string.YunigramRunning))
                             .setCategory(NotificationCompat.CATEGORY_STATUS)
                             .build());
         }

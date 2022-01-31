@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NekoSettings">تنظیمات نکوگرام</string>
+    <string name="YuniSettings">تنظیمات نکوگرام</string>
     <string name="IPv6">سعی کنید از طریق IPv6 متصل شوید</string>
     <string name="MessageMenu">منوی پیام</string>
     <string name="HidePhone">شماره تلفن من را مخفی کن</string>
@@ -22,7 +22,7 @@
     <string name="TransparentStatusBar">نوار وضعیت شفاف</string>
     <string name="EnableResidentNotification">نمایش یک اعلان ساکن</string>
     <string name="DisableResidentNotification">اعلان ساکن را غیرفعال کنید</string>
-    <string name="NekogramRunning">نکوگرام در حال اجراست</string>
+    <string name="YunigramRunning">نکوگرام در حال اجراست</string>
     <string name="EventType">مجموعه آیکون نوار کناری</string>
     <string name="ChristmasHat">نمایش کلاه کریسمس هر روز</string>
     <string name="DependsOnDate">بستگی به تاریخ</string>
@@ -124,7 +124,7 @@
     <string name="WsEnableTls">فعال کردن tls</string>
     <string name="WsLocalProxy">پروکسی محلی</string>
     <string name="WsEnableDoh">فعال کردن DoH</string>
-    <string name="UpdateNekogram">بروز رسانی نکوگرام</string>
+    <string name="UpdateYunigram">بروز رسانی نکوگرام</string>
     <string name="TranslationTarget">زبان مقصد</string>
     <string name="TranslationTargetApp">مانند برنامه</string>
     <string name="Translator">مترجم</string>
