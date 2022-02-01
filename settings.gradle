@@ -1,6 +1,8 @@
-include ':TMessagesProj', ':lspatch'
-include ':daemon-service'
-project(':daemon-service').projectDir = new File('core/daemon-service')
+include ':TMessagesProj', ':app'
+include ':lspcore'
+project(':lspcore').projectDir = new File('core/core')
+include ':lspapp'
+project(':lspapp').projectDir = new File('core/app')
 include ':hiddenapi-stubs'
 project(':hiddenapi-stubs').projectDir = new File('core/hiddenapi-stubs')
 include ':hiddenapi-bridge'
@@ -9,3 +11,5 @@ include ':manager-service'
 project(':manager-service').projectDir = new File('core/manager-service')
 include ':interface'
 project(':interface').projectDir = new File('core/service/interface')
+include ':share'
+include ':imanager'

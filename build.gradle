@@ -25,8 +25,8 @@ ext {
     defaultManagerPackageName = "org.lsposed.lspatch"
     androidSourceCompatibility = JavaVersion.VERSION_11
     androidTargetCompatibility = JavaVersion.VERSION_11
-    agpVersion = "7.0.3"
-    navVersion = "2.4.0-beta02"
+    agpVersion = "7.1.0"
+    navVersion = "2.5.0-alpha01"
 }
 
 allprojects {

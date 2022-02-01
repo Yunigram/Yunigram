@@ -130,7 +130,7 @@ android {
         }
         lspatch {
             dimension "version"
-            applicationIdSuffix ".lspatch"
+            applicationIdSuffix ".org.lsposed.lspatch.lspatch"
             minSdkVersion 28
         }
     }
