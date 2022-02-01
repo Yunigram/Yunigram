@@ -1,0 +1,4 @@
+[submodule "core"]
+	path = core
+	url = https://github.com/keta1/LSPosed.git
+	branch = lspatch
