@@ -175,7 +175,8 @@ android {
 }
 
 dependencies {
-    lspatchImplementation project(path: ':lspatch')
+    lspatchImplementation 'de.upb.cs.swt:axml:2.1.1'
+    lspatchCompileOnly project(":hiddenapi-stubs")
 }
 
 def patchBundleReleaseManifest = task('patchBundleReleaseManifest').doLast {

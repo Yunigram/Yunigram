@@ -25,6 +25,5 @@ android {
 }
 
 dependencies {
-    implementation 'de.upb.cs.swt:axml:2.1.1'
     compileOnly project(":hiddenapi-stubs")
 }
