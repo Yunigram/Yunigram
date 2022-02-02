@@ -115,6 +115,7 @@ android {
             signingConfig signingConfigs.release
             applicationIdSuffix ".beta"
         }
+
         release {
             signingConfig signingConfigs.release
             minifyEnabled true
@@ -128,6 +129,7 @@ android {
         normal {
             dimension "version"
         }
+
         lspatch {
             dimension "version"
             applicationIdSuffix ".lspatch"

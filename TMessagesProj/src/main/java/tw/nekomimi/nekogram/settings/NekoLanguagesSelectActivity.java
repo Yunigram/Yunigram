@@ -46,16 +46,17 @@ public class NekoLanguagesSelectActivity extends BaseFragment {
     public static final int TYPE_TARGET = 1;
 
     private static final List<String> RESTRICTED_LIST = Arrays.asList(
-            "af", "am", "ar", "ar", "az", "be", "bg", "bn", "bs", "ca", "ceb",
-            "co", "cs", "cy", "da", "de", "el", "en", "eo", "es", "et", "eu",
-            "fa", "fi", "fil", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw",
-            "he", "hi", "hmn", "hr", "ht", "hu", "hy", "id", "ig", "is", "it",
-            "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky", "la", "lb",
-            "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt",
-            "my", "ne", "nl", "no", "ny", "pa", "pl", "ps", "pt", "ro", "ru",
-            "sd", "si", "sk", "sl", "sm", "sn", "so", "sq", "sr", "st", "su",
-            "sv", "sw", "ta", "te", "tg", "th", "tr", "uk", "ur", "uz", "vi",
-            "xh", "yi", "yo", "zh", "zu");
+            "af", "am", "ar", "az", "be", "bg", "bn", "bs", "ca", "ceb",
+            "co", "cs", "cy", "da", "de", "el", "en", "eo", "es", "et",
+            "eu", "fa", "fi", "fil", "fr", "fy", "ga", "gd", "gl", "gu",
+            "ha", "haw", "he", "hi", "hmn", "hr", "ht", "hu", "hy", "id",
+            "ig", "is", "it", "ja", "jv", "ka", "kk", "km", "kn", "ko",
+            "ku", "ky", "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk",
+            "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl", "no", "ny",
+            "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl",
+            "sm", "sn", "so", "sq", "sr", "st", "su", "sv", "sw", "ta",
+            "te", "tg", "th", "tr", "uk", "ur", "uz", "vi", "xh", "yi",
+            "yo", "zh", "zu");
 
     private final int currentType;
 
@@ -205,10 +206,12 @@ public class NekoLanguagesSelectActivity extends BaseFragment {
             Locale locale = Locale.forLanguageTag(languageCode);
             if (!TextUtils.isEmpty(locale.getScript())) {
                 localeInfo.name = HtmlCompat.fromHtml(locale.getDisplayScript(locale), HtmlCompat.FROM_HTML_MODE_LEGACY);
-                localeInfo.nameEnglish = HtmlCompat.fromHtml(currentType == TYPE_RESTRICTED ? locale.getDisplayScript(localeEn) : locale.getDisplayScript(), HtmlCompat.FROM_HTML_MODE_LEGACY);
+                localeInfo.nameEnglish = HtmlCompat.fromHtml(locale.getDisplayScript(localeEn), HtmlCompat.FROM_HTML_MODE_LEGACY);
+                localeInfo.nameLocalized = HtmlCompat.fromHtml(locale.getDisplayScript(), HtmlCompat.FROM_HTML_MODE_LEGACY);
             } else {
                 localeInfo.name = locale.getDisplayName(locale);
-                localeInfo.nameEnglish = currentType == TYPE_RESTRICTED ? locale.getDisplayName(localeEn) : locale.getDisplayName();
+                localeInfo.nameEnglish = locale.getDisplayName(localeEn);
+                localeInfo.nameLocalized = locale.getDisplayName();
             }
             sortedLanguages.add(localeInfo);
         }
@@ -248,7 +251,7 @@ public class NekoLanguagesSelectActivity extends BaseFragment {
             if (c.langCode.equals("app")) {
                 continue;
             }
-            if (c.name.toString().toLowerCase().startsWith(query) || c.nameEnglish.toString().toLowerCase().startsWith(query)) {
+            if (c.name.toString().toLowerCase().startsWith(query) || c.nameEnglish.toString().toLowerCase().startsWith(query) || c.nameLocalized.toString().toLowerCase().startsWith(query)) {
                 resultArray.add(c);
             }
         }
@@ -342,7 +345,7 @@ public class NekoLanguagesSelectActivity extends BaseFragment {
                     if (localeInfo.langCode.equals("app")) {
                         cell.setTextAndCheck(LocaleController.getString("TranslationTargetApp", R.string.TranslationTargetApp), NekoConfig.translationTarget.equals(localeInfo.langCode), !last);
                     } else {
-                        cell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameEnglish, NekoConfig.translationTarget.equals(localeInfo.langCode), false, !last);
+                        cell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameLocalized, NekoConfig.translationTarget.equals(localeInfo.langCode), false, !last);
                     }
                     break;
                 }
@@ -359,7 +362,7 @@ public class NekoLanguagesSelectActivity extends BaseFragment {
                         last = position == sortedLanguages.size() - 1;
                     }
                     boolean checked = NekoConfig.restrictedLanguages.contains(localeInfo.langCode) || localeInfo.langCode.equals(getCurrentTargetLanguage());
-                    cell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameEnglish, checked, false, !last);
+                    cell.setTextAndValueAndCheck(localeInfo.name, localeInfo.nameLocalized, checked, false, !last);
                     break;
                 }
             }
@@ -409,6 +412,7 @@ public class NekoLanguagesSelectActivity extends BaseFragment {
 
         public CharSequence name;
         public CharSequence nameEnglish;
+        public CharSequence nameLocalized;
         public String langCode;
     }
 }
