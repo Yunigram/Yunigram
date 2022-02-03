@@ -5009,11 +5009,11 @@ public class MessageObject {
     }
 
     public static boolean isVideoSticker(TLRPC.Document document) {
-        return document != null && "video/webm".equals(document.mime_type);
+        return document != null && "video/webm".equals(document.mime_type) && isStickerHasSet(document); // https://t.me/tdlibchat/36153
     }
 
     public boolean isVideoSticker() {
-        return getDocument() != null && "video/webm".equals(getDocument().mime_type);
+        return isVideoSticker(getDocument());
     }
 
     public static boolean isStickerDocument(TLRPC.Document document) {
