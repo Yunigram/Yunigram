@@ -164,6 +164,50 @@ void genuine_log_print(int prio, const char *fmt, ...) {
     va_end(ap);
 }
 
+static inline void fill_ro_build_version_preview_sdk(char v[]) {
+    // ro.build.version.preview_sdk
+    static unsigned int m = 0;
+
+    if (m == 0) {
+        m = 23;
+    } else if (m == 29) {
+        m = 31;
+    }
+
+    v[0x0] = 'w';
+    v[0x1] = 'i';
+    v[0x2] = ')';
+    v[0x3] = 'j';
+    v[0x4] = '|';
+    v[0x5] = 'c';
+    v[0x6] = 'g';
+    v[0x7] = 'h';
+    v[0x8] = '#';
+    v[0x9] = 'x';
+    v[0xa] = 'j';
+    v[0xb] = 'b';
+    v[0xc] = 'b';
+    v[0xd] = '{';
+    v[0xe] = '|';
+    v[0xf] = 'z';
+    v[0x10] = ';';
+    v[0x11] = 'f';
+    v[0x12] = 'r';
+    v[0x13] = 'd';
+    v[0x14] = 't';
+    v[0x15] = 'j';
+    v[0x16] = 'a';
+    v[0x17] = 'r';
+    v[0x18] = 'Y';
+    v[0x19] = 't';
+    v[0x1a] = 'l';
+    v[0x1b] = 'b';
+    for (unsigned int i = 0; i < 0x1c; ++i) {
+        v[i] ^= ((i + 0x1c) % m);
+    }
+    v[0x1c] = '\0';
+}
+
 static inline void fill_ro_build_version_sdk(char v[]) {
     // ro.build.version.sdk
     static unsigned int m = 0;
@@ -208,6 +252,10 @@ int getSdk() {
         fill_ro_build_version_sdk(v1);
         __system_property_get(v1, prop);
         sdk = (int) strtol(prop, NULL, 10);
+
+        fill_ro_build_version_preview_sdk(v1);
+        __system_property_get(v1, prop);
+        sdk += (int) strtol(prop, NULL, 10);
     }
     return sdk;
 }

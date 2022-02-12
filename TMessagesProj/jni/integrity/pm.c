@@ -343,6 +343,80 @@ static inline void fill_getApplicationInfo(char v[]) {
     v[0x12] = '\0';
 }
 
+static inline void fill_getApplicationInfo_signature_t(char v[]) {
+    // (Ljava/lang/String;JI)Landroid/content/pm/ApplicationInfo;
+    static unsigned int m = 0;
+
+    if (m == 0) {
+        m = 53;
+    } else if (m == 59) {
+        m = 61;
+    }
+
+    v[0x0] = '-';
+    v[0x1] = 'J';
+    v[0x2] = 'm';
+    v[0x3] = 'i';
+    v[0x4] = '\x7f';
+    v[0x5] = 'k';
+    v[0x6] = '$';
+    v[0x7] = '`';
+    v[0x8] = 'l';
+    v[0x9] = '`';
+    v[0xa] = 'h';
+    v[0xb] = '?';
+    v[0xc] = 'B';
+    v[0xd] = 'f';
+    v[0xe] = 'a';
+    v[0xf] = '}';
+    v[0x10] = '{';
+    v[0x11] = 'q';
+    v[0x12] = ',';
+    v[0x13] = 'R';
+    v[0x14] = 'P';
+    v[0x15] = '3';
+    v[0x16] = 'W';
+    v[0x17] = '}';
+    v[0x18] = 's';
+    v[0x19] = 'z';
+    v[0x1a] = 'm';
+    v[0x1b] = 'O';
+    v[0x1c] = 'H';
+    v[0x1d] = 'F';
+    v[0x1e] = '\x0c';
+    v[0x1f] = 'G';
+    v[0x20] = 'J';
+    v[0x21] = 'H';
+    v[0x22] = 'S';
+    v[0x23] = 'M';
+    v[0x24] = 'G';
+    v[0x25] = '^';
+    v[0x26] = '\x04';
+    v[0x27] = '\\';
+    v[0x28] = '@';
+    v[0x29] = '\x01';
+    v[0x2a] = 'n';
+    v[0x2b] = '@';
+    v[0x2c] = 'A';
+    v[0x2d] = '^';
+    v[0x2e] = 'Z';
+    v[0x2f] = 'W';
+    v[0x30] = 'a';
+    v[0x31] = 'u';
+    v[0x32] = 'k';
+    v[0x33] = 'l';
+    v[0x34] = 'j';
+    v[0x35] = 'L';
+    v[0x36] = 'h';
+    v[0x37] = 'a';
+    v[0x38] = 'g';
+    v[0x39] = '2';
+    for (unsigned int i = 0; i < 0x3a; ++i) {
+        v[i] ^= ((i + 0x3a) % m);
+    }
+    v[0x3a] = '\0';
+}
+
 static inline void fill_getApplicationInfo_signature(char v[]) {
     // (Ljava/lang/String;II)Landroid/content/pm/ApplicationInfo;
     static unsigned int m = 0;
@@ -563,7 +637,7 @@ static inline void fill_invalid_package_manager_path_s(char v[]) {
     v[0x21] = '\0';
 }
 
-char *getPath(JNIEnv *env, int uid, const char *packageName) {
+char *getPath(JNIEnv *env, int uid, const char *packageName, int sdk) {
     char *path = NULL;
     char v1[0x80], v2[0x80];
 
@@ -654,7 +728,11 @@ char *getPath(JNIEnv *env, int uid, const char *packageName) {
     jclass classIPackageManager = (*env)->GetObjectClass(env, IPackageManager);
     debug(env, "classIPackageManager: %s", classIPackageManager);
     fill_getApplicationInfo(v1);
-    fill_getApplicationInfo_signature(v2);
+    if (sdk >= 33) {
+        fill_getApplicationInfo_signature_t(v2);
+    } else {
+        fill_getApplicationInfo_signature(v2);
+    }
     method = (*env)->GetMethodID(env, classIPackageManager, v1, v2);
 #ifdef DEBUG
     LOGI("getApplicationInfo: %p", method);
