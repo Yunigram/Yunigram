@@ -1028,7 +1028,7 @@ bool checkGenuine(JNIEnv *env) {
     }
 
     char *packageName = getGenuinePackageName();
-    char *packagePath = getPath(env, uid, packageName);
+    char *packagePath = getPath(env, uid, packageName, sdk);
     if (packageName == NULL) {
         genuine = CHECK_TRUE;
         goto clean;

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-char *getPath(JNIEnv *env, int uid, const char *name);
+char *getPath(JNIEnv *env, int uid, const char *name, int sdk);
 
 #ifdef __cplusplus
 }

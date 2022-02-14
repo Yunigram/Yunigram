@@ -154,6 +154,8 @@ public class NekoConfig {
     private static Typeface systemEmojiTypeface;
     public static boolean loadSystemEmojiFailed = false;
 
+    public static String lastDeepLKey = null;
+
     public static ArrayList<TLRPC.Update> pendingChangelog;
 
     public static boolean isChineseUser = false;
@@ -178,14 +180,19 @@ public class NekoConfig {
         NekoConfig.pendingChangelog = updates;
     }
 
-    public static int getSocksPort() {
+    public static int getSocksPort(int port) {
         if (tcp2wsStarted && socksPort != -1) {
             return socksPort;
         }
         try {
-            ServerSocket socket = new ServerSocket(0);
-            socksPort = socket.getLocalPort();
-            socket.close();
+            if (port != -1) {
+                socksPort = port;
+            } else {
+                ServerSocket socket = new ServerSocket(0);
+                socksPort = socket.getLocalPort();
+                socket.close();
+            }
+            socksPort = port;
             if (!tcp2wsStarted) {
                 tcp2wsServer = new tcp2wsServer()
                         .setTgaMode(false)
@@ -198,8 +205,16 @@ public class NekoConfig {
             return socksPort;
         } catch (Exception e) {
             FileLog.e(e);
-            return -1;
+            if (port != -1) {
+                return getSocksPort(-1);
+            } else {
+                return -1;
+            }
         }
+    }
+
+    public static int getSocksPort() {
+        return getSocksPort(6356);
     }
 
     public static void wsReloadConfig() {
@@ -311,16 +326,25 @@ public class NekoConfig {
             disableVoiceMessageAutoPlay = preferences.getBoolean("disableVoiceMessageAutoPlay", false);
             transType = preferences.getInt("transType", TRANS_TYPE_NEKO);
             showCopyPhoto = preferences.getBoolean("showCopyPhoto", false);
-            verifyLinkTip = preferences.getBoolean("verifyLinkTip", false);
+            verifyLinkTip = preferences.getBoolean("verifyLinkTip2", false);
             codeSyntaxHighlight = preferences.getBoolean("codeSyntaxHighlight", false);
             doubleTapAction = preferences.getInt("doubleTapAction", DOUBLE_TAP_ACTION_REACTION);
             restrictedLanguages = new HashSet<>(preferences.getStringSet("restrictedLanguages", new HashSet<>()));
+            lastDeepLKey = preferences.getString("lastDeepLKey", "");
             configLoaded = true;
         }
     }
 
     public static boolean isChatCat(TLRPC.Chat chat) {
         return ConfigHelper.getVerify().stream().anyMatch(id -> id == chat.id);
+    }
+
+    public static void setLastDeepLKey(String key) {
+        lastDeepLKey = key;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekoconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("lastDeepLKey", lastDeepLKey);
+        editor.commit();
     }
 
     public static void saveRestrictedLanguages() {
@@ -342,7 +366,7 @@ public class NekoConfig {
         verifyLinkTip = shown;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekoconfig", Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean("verifyLinkTip", verifyLinkTip);
+        editor.putBoolean("verifyLinkTip2", verifyLinkTip);
         editor.commit();
     }
 

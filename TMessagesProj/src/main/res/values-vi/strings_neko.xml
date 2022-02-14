@@ -129,7 +129,7 @@
     <string name="WsEnableTls">Kích hoạt TLS</string>
     <string name="WsLocalProxy">Proxy cục bộ</string>
     <string name="WsEnableDoh">Kích hoạt DoH</string>
-    <string name="UpdateYunigram">Cập nhật Nekogram</string>
+    <string name="UpdateYunigram">Cập nhật Yunigram</string>
     <string name="TranslationTarget">Tập trung vào ngôn ngữ</string>
     <string name="TranslationTargetApp">Dựa theo ứng dụng</string>
     <string name="Translator">Công cụ dịch</string>

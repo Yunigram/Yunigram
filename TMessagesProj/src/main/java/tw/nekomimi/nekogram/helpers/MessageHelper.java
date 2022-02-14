@@ -211,6 +211,22 @@ public class MessageHelper extends BaseController {
                 "[\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA]\uFE0F?)+");
     }
 
+    public String getMessagePlainText(MessageObject messageObject) {
+        String message;
+        if (messageObject.isPoll()) {
+            TLRPC.Poll poll = ((TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media).poll;
+            StringBuilder pollText = new StringBuilder(poll.question).append("\n");
+            for (TLRPC.TL_pollAnswer answer : poll.answers) {
+                pollText.append("\n\uD83D\uDD18 ");
+                pollText.append(answer.text);
+            }
+            message = pollText.toString();
+        } else {
+            message = messageObject.messageOwner.message;
+        }
+        return message;
+    }
+
     public MessageObject getMessageForTranslate(MessageObject selectedObject, MessageObject.GroupedMessages selectedObjectGroup) {
         MessageObject messageObject = null;
         if (selectedObjectGroup != null && !selectedObjectGroup.isDocuments) {
@@ -226,7 +242,7 @@ public class MessageHelper extends BaseController {
         return messageObject;
     }
 
-    private boolean isLinkOrEmojiOnlyMessage(MessageObject messageObject) {
+    public boolean isLinkOrEmojiOnlyMessage(MessageObject messageObject) {
         var entities = messageObject.messageOwner.entities;
         if (entities != null) {
             for (TLRPC.MessageEntity entity : entities) {
@@ -293,7 +309,7 @@ public class MessageHelper extends BaseController {
     }
 
     public void saveStickerToGallery(Activity activity, MessageObject messageObject, Runnable callback) {
-        saveStickerToGallery(activity, getPathToMessage(messageObject), callback);
+        saveStickerToGallery(activity, getPathToMessage(messageObject), messageObject.isVideoSticker(), callback);
     }
 
     public static void saveStickerToGallery(Activity activity, TLRPC.Document document, Runnable callback) {
@@ -302,20 +318,23 @@ public class MessageHelper extends BaseController {
         if (!temp.exists()) {
             return;
         }
-        saveStickerToGallery(activity, path, callback);
+        saveStickerToGallery(activity, path, MessageObject.isVideoSticker(document), callback);
     }
 
-    private static void saveStickerToGallery(Activity activity, String path, Runnable callback) {
+    private static void saveStickerToGallery(Activity activity, String path, boolean video, Runnable callback) {
         Utilities.globalQueue.postRunnable(() -> {
             try {
-                Bitmap image = BitmapFactory.decodeFile(path);
-                if (image != null) {
-                    File file = new File(path.replace(".webp", ".png"));
-                    FileOutputStream stream = new FileOutputStream(file);
-                    image.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                    stream.close();
-                    MediaController.saveFile(file.toString(), activity, 0, null, null);
-                    AndroidUtilities.runOnUIThread(callback);
+                if (video) {
+                    MediaController.saveFile(path, activity, 1, null, null, callback);
+                } else {
+                    Bitmap image = BitmapFactory.decodeFile(path);
+                    if (image != null) {
+                        File file = new File(path.replace(".webp", ".png"));
+                        FileOutputStream stream = new FileOutputStream(file);
+                        image.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                        stream.close();
+                        MediaController.saveFile(file.toString(), activity, 0, null, null, callback);
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);
