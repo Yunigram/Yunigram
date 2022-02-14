@@ -7,26 +7,21 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:7.1.1'
         classpath 'com.google.gms:google-services:4.3.10'
-        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.5.0-alpha01")
     }
 }
 // sync from https://github.com/LSPosed/LSPosed/blob/master/build.gradle.kts
 ext {
-    injectedPackageName = "com.android.shell"
-    injectedPackageUid = 2000
-    androidCompileSdkVersion = 31
-    androidCompileNdkVersion = "23.0.7599858"
-    androidBuildToolsVersion = "31.0.0"
-    androidMinSdkVersion = 28
-    androidTargetSdkVersion = 30
-    verCode = 1
-    verName = "lspatch"
-    apiCode = 93
     defaultManagerPackageName = "org.lsposed.lspatch"
+    apiCode = 93
+    verCode = 1
+    verName = "0.3"
+    androidMinSdkVersion = 28
+    androidTargetSdkVersion = 32
+    androidCompileSdkVersion = 32
+    androidCompileNdkVersion = "23.1.7779620"
+    androidBuildToolsVersion = "31.0.0"
     androidSourceCompatibility = JavaVersion.VERSION_11
     androidTargetCompatibility = JavaVersion.VERSION_11
-    agpVersion = "7.1.0"
-    navVersion = "2.5.0-alpha01"
 }
 
 allprojects {

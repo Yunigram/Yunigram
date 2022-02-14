@@ -1,15 +1,22 @@
+rootProject.name = "Yunigram"
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 include ':TMessagesProj', ':app'
-include ':lspcore'
-project(':lspcore').projectDir = new File('core/core')
-include ':lspapp'
-project(':lspapp').projectDir = new File('core/app')
-include ':hiddenapi-stubs'
-project(':hiddenapi-stubs').projectDir = new File('core/hiddenapi-stubs')
-include ':hiddenapi-bridge'
-project(':hiddenapi-bridge').projectDir = new File('core/hiddenapi-bridge')
-include ':manager-service'
-project(':manager-service').projectDir = new File('core/manager-service')
-include ':interface'
-project(':interface').projectDir = new File('core/service/interface')
+
+include(":daemon-service")
+include(":hiddenapi-bridge")
+include(":hiddenapi-stubs")
+include(":interface")
+include(":lspcore")
+include(":manager-service")
+
+project(":daemon-service").projectDir = file("core/daemon-service")
+project(":hiddenapi-bridge").projectDir = file("core/hiddenapi-bridge")
+project(":hiddenapi-stubs").projectDir = file("core/hiddenapi-stubs")
+project(":interface").projectDir = file("core/service/interface")
+project(":lspcore").projectDir = file("core/core")
+project(":manager-service").projectDir = file("core/manager-service")
+
 include ':share'
 include ':imanager'
