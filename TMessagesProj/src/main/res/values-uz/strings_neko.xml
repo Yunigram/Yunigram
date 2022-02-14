@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="YuniSettings">Neko sozlamalari</string>
-    <string name="MessageMenu">Xabarlar menyusi</string>
-    <string name="HidePhone">Telefon raqamimni yashirish</string>
-    <string name="Hide">Yashirish</string>
-    <string name="DeleteAccount">Telegram akkountni oʻchirish</string>
-    <!-- Accessibility -->
-</resources>
