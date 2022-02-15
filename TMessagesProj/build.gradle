@@ -176,6 +176,10 @@ android {
     dependenciesInfo.includeInApk false
 
     sourceSets["main"].assets.srcDirs("${rootProject.projectDir}/out/assets")
+
+    aaptOptions {
+        noCompress 'liblspd.so'
+    }
 }
 
 dependencies {

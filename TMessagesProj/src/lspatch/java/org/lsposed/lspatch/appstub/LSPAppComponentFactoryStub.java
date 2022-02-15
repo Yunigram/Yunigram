@@ -35,7 +35,8 @@ public class LSPAppComponentFactoryStub extends CoreComponentFactory {
             vmInstructionSet.setAccessible(true);
 
             String arch = (String) vmInstructionSet.invoke(getRuntime.invoke(null));
-            String path = cl.getResource("assets/lspatch/lspd/" + arch + "/liblspd.so").getPath().substring(5);
+            assert arch != null;
+            String path = cl.getResource("assets/lspatch/lspd/" + (arch.equals("arm") ? "armeabi-v7a" : (arch.equals("arm64") ? "arm64-v8a" : arch)) + "/liblspd.so").getPath().substring(5);
             System.load(path);
         } catch (Throwable e) {
             Log.e("LSPatch", "load lspd error", e);
