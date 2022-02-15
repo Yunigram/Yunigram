@@ -7,3 +7,4 @@ local.properties
 .cxx
 .DS_Store
 /TMessagesProj/src/main/java/tw/nekomimi/nekogram/Extra.java
+/out
