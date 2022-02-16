@@ -110,12 +110,12 @@ public class LSPApplication extends ApplicationServiceClient {
             XposedInit.loadModules();
             // WARN: Since it uses `XResource`, the following class should not be initialized
             // before forkPostCommon is invoke. Otherwise, you will get failure of XResources
-            LSPLoader.initModules(appLoadedApk);
+            LSPLoader.initModules(stubLoadedApk);
             Log.i(TAG, "Modules initialized");
 
-            switchClassLoader("mBaseClassLoader");
-            switchClassLoader("mDefaultClassLoader");
-            switchClassLoader("mClassLoader");
+//            switchClassLoader("mBaseClassLoader");
+//            switchClassLoader("mDefaultClassLoader");
+//            switchClassLoader("mClassLoader");
         } catch (Throwable e) {
             Log.e(TAG, "Do hook", e);
         }
@@ -140,7 +140,7 @@ public class LSPApplication extends ApplicationServiceClient {
             Log.i(TAG, "Use manager: " + config.useManager);
             Log.i(TAG, "Signature bypass level: " + config.sigBypassLevel);
 
-            String originPath = appInfo.dataDir + "/cache/lspatch/origin/";
+            /*String originPath = appInfo.dataDir + "/cache/lspatch/origin/";
             String cacheApkPath;
             try (ZipFile sourceFile = new ZipFile(appInfo.sourceDir)) {
                 cacheApkPath = originPath + sourceFile.getEntry(ORIGINAL_APK_ASSET_PATH).getCrc();
@@ -180,7 +180,7 @@ public class LSPApplication extends ApplicationServiceClient {
                 var mLaunchingActivities = (Map<?, ?>) XposedHelpers.getObjectField(activityThread, "mLaunchingActivities");
                 mLaunchingActivities.forEach(fixActivityClientRecord);
             }
-            Log.i(TAG, "hooked app initialized: " + appLoadedApk);
+            Log.i(TAG, "hooked app initialized: " + appLoadedApk);*/
 
             return (Context) XposedHelpers.callStaticMethod(Class.forName("android.app.ContextImpl"), "createAppContext", activityThread, stubLoadedApk);
         } catch (Throwable e) {
