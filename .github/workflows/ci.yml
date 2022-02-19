@@ -14,8 +14,10 @@ jobs:
     name: Gradle Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
       - name: Prepare Java 16
         uses: actions/setup-java@v1
         with:
@@ -46,10 +48,27 @@ jobs:
         run: |
           sudo apt-get install bison gcc make curl ninja-build ccache -y
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.4.7075529" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+      - name: Donwload Tmoe
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          repo: cinit/TMoe
+          workflow: push_ci.yml
+          path: modules
+      - name: Write file
+        run: |
+          ccache -zp
+          ccache -o max_size=10G
+          ccache -o hash_dir=false
+          ccache -o compiler_check='%compiler% -dumpmachine; %compiler% -dumpversion'
+          mkdir -p out/assets/lspatch/modules
+          cp modules/build_output_**.zip/apk/release/app-release-unsigned.apk out/assets/lspatch/modules/cc.ioctl.tmoe.bin
+          echo ${{ secrets.EXTRA }} | base64 --decode > TMessagesProj/src/main/java/tw/nekomimi/nekogram/Extra.java
+        env:
+          EXTRA: ${{ secrets.EXTRA }}
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
       - name: Debug Build
         run: |
-          ccache -M 10G
-          ccache -zp
           ./gradlew TMessagesProj:assembleRelease
           ccache -s
         env:
