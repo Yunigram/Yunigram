@@ -1,0 +1,85 @@
+name: Build CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Gradle Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+      - name: Prepare Java 16
+        uses: actions/setup-java@v1
+        with:
+          java-version: 16
+          java-package: jdk
+      - name: Setup Android SDK Tools
+        uses: android-actions/setup-android@v2
+        
+      - name: Native Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            TMessagesProj/.cxx
+            TMessagesProj/build/intermediates/cmake
+            TMessagesProj/build/intermediates/stripped_native_libs
+            TMessagesProj/build/intermediates/cxx
+            TMessagesProj/build/intermediates/merged_jni_libs
+            TMessagesProj/build/intermediates/merged_native_libs
+            ~/.cache/ccache
+            ~/.ccache
+          key: jni-${{ hashFiles('TMessagesProj/jni/**') }}
+      - name: Gradle cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle
+          key: gradle-${{ hashFiles('**/*.gradle') }}
+      - name: Prepare Environment
+        run: |
+          sudo apt-get install bison gcc make curl ninja-build ccache -y
+          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.4.7075529" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+      - name: Donwload Tmoe
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          repo: cinit/TMoe
+          workflow: push_ci.yml
+          path: modules
+      - name: Write file
+        run: |
+          ccache -zp
+          ccache -o max_size=10G
+          ccache -o hash_dir=false
+          ccache -o compiler_check='%compiler% -dumpmachine; %compiler% -dumpversion'
+          mkdir -p out/assets/lspatch/modules
+          cp modules/build_output_**.zip/apk/release/app-release-unsigned.apk out/assets/lspatch/modules/cc.ioctl.tmoe.bin
+          echo ${{ secrets.EXTRA }} | base64 --decode > TMessagesProj/src/main/java/tw/nekomimi/nekogram/Extra.java
+        env:
+          EXTRA: ${{ secrets.EXTRA }}
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Debug Build
+        run: |
+          ./gradlew TMessagesProj:assembleRelease
+          ccache -s
+        env:
+          KEYSTORE_PASS: ${{ secrets.SIGN_KEYSTORE_PASSWORD }}
+          ALIAS_NAME: ${{ secrets.SIGN_ALIAS }}
+          ALIAS_PASS: ${{ secrets.SIGN_KEY_PASSWORD }}
+          NDK_CCACHE: ccache
+      - uses: actions/upload-artifact@v2
+        name: Upload apk
+        with:
+          name: apk
+          path: TMessagesProj/build/outputs/apk/release/*
+
+         
