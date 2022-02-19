@@ -35,6 +35,7 @@ jobs:
             TMessagesProj/build/intermediates/merged_jni_libs
             TMessagesProj/build/intermediates/merged_native_libs
             ~/.cache/ccache
+            ~/.ccache
           key: jni-${{ hashFiles('TMessagesProj/jni/**') }}
       - name: Gradle cache
         uses: actions/cache@v2
@@ -47,11 +48,15 @@ jobs:
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.4.7075529" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
       - name: Debug Build
         run: |
-          echo -e "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}\nRELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}\nRELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}">>local.properties
           ccache -M 10G
           ccache -zp
           ./gradlew TMessagesProj:assembleRelease
           ccache -s
+        env:
+          KEYSTORE_PASS: ${{ secrets.SIGN_KEYSTORE_PASSWORD }}
+          ALIAS_NAME: ${{ secrets.SIGN_ALIAS }}
+          ALIAS_PASS: ${{ secrets.SIGN_KEY_PASSWORD }}
+          NDK_CCACHE: ccache
       - uses: actions/upload-artifact@v2
         name: Upload apk
         with:
