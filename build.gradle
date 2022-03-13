@@ -2,12 +2,15 @@
 buildscript {
     repositories {
         mavenCentral()
-        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.1'
-        classpath 'com.google.gms:google-services:4.3.10'
+        classpath group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '6.1.0.202203080745-r'
     }
+}
+
+plugins {
+    id 'com.android.application' version '7.1.2' apply false
+    id 'com.google.gms.google-services' version '4.3.10' apply false
 }
 // sync from https://github.com/LSPosed/LSPosed/blob/master/build.gradle.kts
 ext {
@@ -24,9 +27,6 @@ ext {
     androidTargetCompatibility = JavaVersion.VERSION_11
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+task clean(type: Delete) {
+    delete rootProject.buildDir
 }

@@ -52,6 +52,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.StickerSetBulletinLayout;
 import org.telegram.ui.Components.StickersArchiveAlert;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -259,12 +260,14 @@ public class MediaDataController extends BaseController {
         loaded = false;
         hints.clear();
         inlineBots.clear();
-        getNotificationCenter().postNotificationName(NotificationCenter.reloadHints);
-        getNotificationCenter().postNotificationName(NotificationCenter.reloadInlineHints);
+        AndroidUtilities.runOnUIThread(() -> {
+            getNotificationCenter().postNotificationName(NotificationCenter.reloadHints);
+            getNotificationCenter().postNotificationName(NotificationCenter.reloadInlineHints);
+        });
 
         drafts.clear();
         draftMessages.clear();
-        draftPreferences.edit().clear().commit();
+        draftPreferences.edit().clear().apply();
 
         botInfos.clear();
         botKeyboards.clear();
@@ -4795,7 +4798,7 @@ public class MediaDataController extends BaseController {
         boolean isPre = false;
         final String mono = "`";
         final String pre = "```";
-        while ((index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
+        while (!EditTextBoldCursor.disableMarkdown && (index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
             if (start == -1) {
                 isPre = message[0].length() - index > 2 && message[0].charAt(index + 1) == '`' && message[0].charAt(index + 2) == '`';
                 start = index;
@@ -4919,6 +4922,7 @@ public class MediaDataController extends BaseController {
 
         CharSequence cs = message[0];
         if (entities == null) entities = new ArrayList<>();
+        if (EditTextBoldCursor.disableMarkdown) return entities;
         cs = parsePattern(cs, BOLD_PATTERN, entities, obj -> new TLRPC.TL_messageEntityBold());
         cs = parsePattern(cs, ITALIC_PATTERN, entities, obj -> new TLRPC.TL_messageEntityItalic());
         cs = parsePattern(cs, SPOILER_PATTERN, entities, obj -> new TLRPC.TL_messageEntitySpoiler());
@@ -4934,15 +4938,11 @@ public class MediaDataController extends BaseController {
         Matcher m = pattern.matcher(cs);
         int offset = 0;
         while (m.find()) {
-            if (checkInclusion(m.start(), entities, false) || checkInclusion(m.start(), entities, true) || checkIntersection(m.start(), m.end(), entities)) {
-                continue;
-            }
-
             String gr = m.group(1);
             cs = cs.subSequence(0, m.start() - offset) + gr + cs.subSequence(m.end() - offset, cs.length());
 
             TLRPC.MessageEntity entity = entityProvider.provide(null);
-            entity.offset = m.start() + offset;
+            entity.offset = m.start() - offset;
             entity.length = gr.length();
             entities.add(entity);
 

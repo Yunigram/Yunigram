@@ -249,6 +249,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     private Paint headerPaint = new Paint();
     private Paint statusBarPaint = new Paint();
+    private Paint navigationBarPaint = new Paint();
     private Paint headerProgressPaint = new Paint();
 
     private ActionBarPopupWindow popupWindow;
@@ -1010,12 +1011,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         @Override
         protected void dispatchDraw(Canvas canvas) {
             super.dispatchDraw(canvas);
-            if (bWidth != 0 && bHeight != 0) {
-                blackPaint.setAlpha((int) (255 * windowView.getAlpha()));
-                if (bX == 0 && bY == 0) {
-                    canvas.drawRect(bX, bY, bX + bWidth, bY + bHeight, blackPaint);
-                } else {
-                    canvas.drawRect(bX - getTranslationX(), bY, bX + bWidth - getTranslationX(), bY + bHeight, blackPaint);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || lastInsets == null) {
+                if (bWidth != 0 && bHeight != 0) {
+                    blackPaint.setAlpha((int) (255 * windowView.getAlpha()));
+                    if (bX == 0 && bY == 0) {
+                        canvas.drawRect(bX, bY, bX + bWidth, bY + bHeight, blackPaint);
+                    } else {
+                        canvas.drawRect(bX - getTranslationX(), bY, bX + bWidth - getTranslationX(), bY + bHeight, blackPaint);
+                    }
                 }
             }
         }
@@ -1035,9 +1038,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     }
                     int right = insets.getSystemWindowInsetRight();
                     if (right != 0) {
-                        canvas.drawRect(getMeasuredWidth() - right, 0, getMeasuredWidth(), h, statusBarPaint);
+                        canvas.drawRect(w - right, 0, w, h, statusBarPaint);
                     }
                 }
+                canvas.drawRect(0, h - insets.getStableInsetBottom(), w, h, navigationBarPaint);
             }
         }
 
@@ -1185,7 +1189,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
         builder.setTitle(urlFinal);
-        builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+        builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("ShareFile", R.string.ShareFile), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
             if (parentActivity == null) {
                 return;
             }
@@ -1215,14 +1219,23 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     }
                 }
                 Browser.openUrl(parentActivity, urlFinal);
-            } else if (which == 1) {
+            } else if (which == 1 || which == 2) {
                 String url = urlFinal;
                 if (url.startsWith("mailto:")) {
                     url = url.substring(7);
                 } else if (url.startsWith("tel:")) {
                     url = url.substring(4);
                 }
-                AndroidUtilities.addToClipboard(url);
+                if (which == 2) {
+                    AndroidUtilities.addToClipboard(url);
+                } else {
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, url);
+                    Intent chooserIntent = Intent.createChooser(shareIntent, LocaleController.getString("ShareFile", R.string.ShareFile));
+                    chooserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    ApplicationLoader.applicationContext.startActivity(chooserIntent);
+                }
             }
         });
         BottomSheet sheet = builder.create();
@@ -3001,7 +3014,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         windowView.setWillNotDraw(false);
         windowView.setClipChildren(true);
         windowView.setFocusable(false);
-
         containerView = new FrameLayout(activity) {
             @Override
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
@@ -3252,6 +3264,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         headerPaint.setColor(0xff000000);
         statusBarPaint.setColor(0xff000000);
         headerProgressPaint.setColor(0xff242426);
+        navigationBarPaint.setColor(Color.BLACK);
         headerView = new FrameLayout(activity) {
             @Override
             protected void onDraw(Canvas canvas) {
@@ -3644,6 +3657,19 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW - 1;
         windowLayoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
         windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
+
+        int uiFlags = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        int navigationColor = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
+        float navigationBrightness = AndroidUtilities.computePerceivedBrightness(navigationColor);
+        boolean isLightNavigation = navigationBrightness >= 0.721f;
+        if (isLightNavigation && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            uiFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            navigationBarPaint.setColor(navigationColor);
+        } else if (!isLightNavigation) {
+            navigationBarPaint.setColor(navigationColor);
+        }
+        windowLayoutParams.systemUiVisibility = uiFlags;
+
         if (Build.VERSION.SDK_INT >= 21) {
             windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
                     WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
@@ -4185,9 +4211,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
             try {
                 if (Build.VERSION.SDK_INT >= 21) {
-                    windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                            WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                            WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
+                    windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                            WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                            WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
                     if (Build.VERSION.SDK_INT >= 28) {
                         windowLayoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                     }

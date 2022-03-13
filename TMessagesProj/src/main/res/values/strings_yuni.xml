@@ -3,7 +3,6 @@
     <string name="AppNameYuni" translatable="false">@string/Yunigram</string>
     <string name="Yunigram" translatable="false">Yunigram</string>
     <string name="YunigramBeta" translatable="false">Yunigram Beta</string>
-    <string name="YunigramEmojiDialogs" translatable="false">&#128566;</string>
     <string name="YuniSettings">Yuni Settings</string>
     <string name="IPv6">Try connecting through IPv6</string>
     <string name="MessageMenu">Message menu</string>
@@ -71,10 +70,10 @@
     <string name="HideAllTab">Hide \"All Chats\" tab</string>
     <string name="HideAllTabAbout">Press \"Back\" on home page to open it.</string>
     <string name="TabTitleType">Show on tabs</string>
-    <string name="TabTitleTypeTip">Emoticons are cloud-synced by Telegram.</string>
+    <string name="TabTitleTypeTip">Icons are cloud-synced by Telegram.</string>
     <string name="TabTitleTypeText">Titles</string>
-    <string name="TabTitleTypeIcon">Emoticons</string>
-    <string name="TabTitleTypeMix">Emoticons with titles</string>
+    <string name="TabTitleTypeIcon">Icons</string>
+    <string name="TabTitleTypeMix">Icons with titles</string>
     <string name="ConfirmAVMessage">Confirm sending video/voice message</string>
     <string name="AskBeforeCalling">Ask before calling</string>
     <string name="DisableNumberRounding">Disable number rounding</string>
@@ -134,7 +133,7 @@
     <string name="SwipeToPiP">Swipe up video to open PiP</string>
     <string name="StickerSavedHint">Sticker saved to gallery</string>
     <string name="RegistrationDate">Registration date</string>
-    <string name="WsDescription">Connect to Telegram through WebSocket via Cloudflare, <![CDATA[<a href=\"https://telegra.ph/wsneko-04-10\">technical details</a>]]>.</string>
+    <string name="WsDescription2">Connect to Telegram through WebSocket via Cloudflare, <![CDATA[<a href=\"%s\">technical details</a>]]>.</string>
     <string name="WsEnableTls">Enable TLS</string>
     <string name="WsLocalProxy">Local proxy</string>
     <string name="WsEnableDoh">Enable DoH</string>
@@ -170,7 +169,7 @@
     <string name="ShareYunigram">Share Yunigram...</string>
     <string name="YunigramVersion">Yunigram %1$s\nBased on Telegram %2$s\nDesigned by %3$s</string>
     <string name="UpdateInstalling">Installing update...</string>
-    <string name="UpdateInstallingRelaunch">Yunigram will relaunch when update completes.</string>
+    <string name="UpdateInstallingRelaunch">Nekogram will relaunch when update completes.</string>
     <string name="UpdateFailedToInstall">Failed to install update: %d</string>
     <string name="QRLoginMessage">Scan QRCode with another device to login.</string>
     <string name="QRLoginTitle">QR Login</string>
@@ -180,7 +179,7 @@
     <string name="TranslatorTypeYuni">In message</string>
     <string name="TranslatorTypeTG">Popup dialog</string>
     <string name="TranslatorTypeExternal">External app</string>
-    <string name="CopyPhoto">Copy photo</string>
+    <string name="CopyPhoto">Copy Photo</string>
     <string name="PhotoCopied">Photo copied to clipboard</string>
     <string name="SaveToDownloadCount_zero">Saving %1$d files to downloads</string>
     <string name="SaveToDownloadCount_one">Saving %1$d file to downloads</string>
@@ -199,6 +198,17 @@
     <string name="CreateMonoLanguage">Code language</string>
     <string name="DoubleTapAction">Double tap action</string>
     <string name="BlockedUserIgnored">blocked</string>
+    <string name="EditUndo">Undo</string>
+    <string name="EditRedo">Redo</string>
+    <string name="EditEnableMarkdown">Enable Markdown</string>
+    <string name="EditDisableMarkdown">Disable Markdown</string>
+    <string name="DisableMarkdownByDefault">Disable Markdown by default</string>
+    <string name="CopyTitle">Copy Title</string>
+    <string name="CopyCallback">Copy Callback Data</string>
+    <string name="CopyInlineQuery">Copy Inline Query</string>
+    <string name="CopyID">Copy ID</string>
+    <string name="SendCallback">Send Callback Data</string>
+    <string name="CallbackData">Callback Data</string>
 
     <!-- Accessibility -->
     <string name="AccessibilitySettings">Accessibility settings</string>

@@ -93,6 +93,8 @@ public class ImportingService extends Service implements NotificationCenter.Noti
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setColor(NekoConfig.getNotificationColor());
+            builder.setCategory(NotificationCompat.CATEGORY_PROGRESS);
+            builder.setOnlyAlertOnce(true);
             if (hasImportingHistory()) {
                 builder.setTicker(LocaleController.getString("ImporImportingService", R.string.ImporImportingService));
                 builder.setContentText(LocaleController.getString("ImporImportingService", R.string.ImporImportingService));

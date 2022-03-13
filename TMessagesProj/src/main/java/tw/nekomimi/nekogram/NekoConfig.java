@@ -60,6 +60,7 @@ public class NekoConfig {
     public static final int DOUBLE_TAP_ACTION_REPLY = 3;
     public static final int DOUBLE_TAP_ACTION_SAVE = 4;
     public static final int DOUBLE_TAP_ACTION_REPEAT = 5;
+    public static final int DOUBLE_TAP_ACTION_EDIT = 6;
 
     private static final String EMOJI_FONT_AOSP = "NotoColorEmoji.ttf";
 
@@ -80,7 +81,7 @@ public class NekoConfig {
     public static boolean disableNumberRounding = false;
     public static boolean disableGreetingSticker = false;
     public static boolean autoTranslate = false;
-    public static boolean codeSyntaxHighlight = false;
+    public static boolean codeSyntaxHighlight = true;
     public static float stickerSize = 14.0f;
     public static int translationProvider = Translator.PROVIDER_GOOGLE;
     public static String translationTarget = "app";
@@ -133,6 +134,7 @@ public class NekoConfig {
     public static boolean swipeToPiP = false;
     public static boolean disableJumpToNextChannel = false;
     public static boolean disableVoiceMessageAutoPlay = false;
+    public static boolean disableMarkdownByDefault = false;
 
     public static final String WS_ADDRESS = "ws.neko";
     private static int socksPort = -1;
@@ -327,10 +329,11 @@ public class NekoConfig {
             transType = preferences.getInt("transType", TRANS_TYPE_NEKO);
             showCopyPhoto = preferences.getBoolean("showCopyPhoto", false);
             verifyLinkTip = preferences.getBoolean("verifyLinkTip2", false);
-            codeSyntaxHighlight = preferences.getBoolean("codeSyntaxHighlight", false);
+            codeSyntaxHighlight = preferences.getBoolean("codeSyntaxHighlight2", true);
             doubleTapAction = preferences.getInt("doubleTapAction", DOUBLE_TAP_ACTION_REACTION);
             restrictedLanguages = new HashSet<>(preferences.getStringSet("restrictedLanguages", new HashSet<>()));
             lastDeepLKey = preferences.getString("lastDeepLKey", "");
+            disableMarkdownByDefault = preferences.getBoolean("disableMarkdownByDefault", false);
             configLoaded = true;
         }
     }
@@ -386,11 +389,19 @@ public class NekoConfig {
         editor.commit();
     }
 
+    public static void toggleDisableMarkdownByDefault() {
+        disableMarkdownByDefault = !disableMarkdownByDefault;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekoconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("disableMarkdownByDefault", disableMarkdownByDefault);
+        editor.commit();
+    }
+
     public static void toggleCodeSyntaxHighlight() {
         codeSyntaxHighlight = !codeSyntaxHighlight;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekoconfig", Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean("codeSyntaxHighlight", codeSyntaxHighlight);
+        editor.putBoolean("codeSyntaxHighlight2", codeSyntaxHighlight);
         editor.commit();
     }
 

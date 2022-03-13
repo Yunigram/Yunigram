@@ -21,6 +21,7 @@ import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -36,7 +37,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -58,7 +58,7 @@ import android.text.style.ImageSpan;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.ContentInfo;
+import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -89,16 +89,20 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
 import androidx.core.os.BuildCompat;
+import androidx.core.view.ContentInfoCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -131,6 +135,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -146,11 +151,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.syntaxhighlight.SyntaxHighlight;
 
-public class ChatActivityEnterView extends ChatBlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
+public class ChatActivityEnterView extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
     public interface ChatActivityEnterViewDelegate {
         void onMessageSend(CharSequence message, boolean notify, int scheduleDate);
@@ -279,7 +284,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
     // Send as... stuff
     private SenderSelectView senderSelectView;
-    private ActionBarPopupWindow senderSelectPopupWindow;
+    private SenderSelectPopup senderSelectPopupWindow;
     private Runnable onEmojiSearchClosed;
     private int popupX, popupY;
     private Runnable onKeyboardClosed;
@@ -632,7 +637,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                         } else {
                             permissions[0] = Manifest.permission.CAMERA;
                         }
-                        parentActivity.requestPermissions(permissions, 3);
+                        parentActivity.requestPermissions(permissions, BasePermissionsActivity.REQUEST_CODE_VIDEO_MESSAGE);
                         return;
                     }
                 }
@@ -1677,13 +1682,24 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         }
     }
 
+    private void send(String mime, Uri uri, boolean notify, int scheduleDate) {
+        if (mime.equalsIgnoreCase("image/gif")) {
+            SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, uri, null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), null, null, notify, 0);
+        } else {
+            SendMessagesHelper.prepareSendingPhoto(accountInstance, null, uri, dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, mime, 0, null, notify, 0);
+        }
+        if (delegate != null) {
+            delegate.onMessageSend(null, true, scheduleDate);
+        }
+    }
+
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat) {
         this(context, parent, fragment, isChat, null);
     }
 
     @SuppressLint("ClickableViewAccessibility")
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat, Theme.ResourcesProvider resourcesProvider) {
-        super(context, fragment);
+        super(context, fragment == null ? null : fragment.contentView);
         this.resourcesProvider = resourcesProvider;
         this.backgroundColor = getThemedColor(Theme.key_chat_messagePanelBackground);
         this.drawBlur = false;
@@ -1829,65 +1845,6 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
         messageEditText = new EditTextCaption(context, resourcesProvider) {
 
-            private void send(InputContentInfoCompat inputContentInfo, boolean notify, int scheduleDate) {
-                ClipDescription description = inputContentInfo.getDescription();
-                if (description.hasMimeType("image/gif")) {
-                    SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, getThreadMessage(), inputContentInfo, null, notify, 0);
-                } else {
-                    SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, inputContentInfo, 0, null, notify, 0);
-                }
-                if (delegate != null) {
-                    delegate.onMessageSend(null, true, scheduleDate);
-                }
-            }
-
-            @Nullable
-            @Override
-            public ContentInfo onReceiveContent(@NonNull ContentInfo payload) {
-                ClipData clipData = payload.getClip();
-                if (clipData != null) {
-                    if (clipData.getItemCount() == 1 && clipData.getDescription().hasMimeType("image/*")) {
-                        editPhoto(clipData.getItemAt(0).getUri(), clipData.getDescription().getMimeType(0));
-                    }
-                }
-                return super.onReceiveContent(payload);
-            }
-
-            @Override
-            public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
-                final InputConnection ic = super.onCreateInputConnection(editorInfo);
-                if (ic == null) {
-                    return null;
-                }
-                try {
-                    EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"});
-
-                    final InputConnectionCompat.OnCommitContentListener callback = (inputContentInfo, flags, opts) -> {
-                        if (BuildCompat.isAtLeastNMR1() && (flags & InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0) {
-                            try {
-                                inputContentInfo.requestPermission();
-                            } catch (Exception e) {
-                                return false;
-                            }
-                        }
-                        if (inputContentInfo.getDescription().hasMimeType("image/gif") || SendMessagesHelper.shouldSendWebPAsSticker(null, inputContentInfo.getContentUri())) {
-                            if (isInScheduleMode()) {
-                                AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (notify, scheduleDate) -> send(inputContentInfo, notify, scheduleDate), resourcesProvider);
-                            } else {
-                                send(inputContentInfo, true, 0);
-                            }
-                        } else {
-                            editPhoto(inputContentInfo.getContentUri(), inputContentInfo.getDescription().getMimeType(0));
-                        }
-                        return true;
-                    };
-                    return InputConnectionCompat.createWrapper(ic, editorInfo, callback);
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-                return ic;
-            }
-
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (stickersDragging || stickersExpansionAnim != null) {
@@ -1962,107 +1919,31 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
             }
 
             @Override
+            public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+                InputConnection ic = super.onCreateInputConnection(outAttrs);
+                if (ic != null && Build.VERSION.SDK_INT <= 30) {
+                    String[] mimeTypes = ViewCompat.getOnReceiveContentMimeTypes(this);
+                    if (mimeTypes != null) {
+                        EditorInfoCompat.setContentMimeTypes(outAttrs, mimeTypes);
+                        ic = InputConnectionCompat.createWrapper(this, ic, outAttrs);
+                    }
+                }
+                return ic;
+            }
+
+            @Override
+            public boolean onDragEvent(DragEvent event) {
+                AppCompatReceiveContentHelper.maybeHandleDragEventViaPerformReceiveContent(this, event);
+                return super.onDragEvent(event);
+            }
+
+            @Override
             public boolean onTextContextMenuItem(int id) {
+                AppCompatReceiveContentHelper.maybeHandleMenuActionViaPerformReceiveContent(this, id);
                 if (id == android.R.id.paste) {
                     isPaste = true;
                 }
-
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && id == android.R.id.paste) {
-                    ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                    ClipData clipData = clipboard.getPrimaryClip();
-                    if (clipData != null) {
-                        if (clipData.getItemCount() == 1 && clipData.getDescription().hasMimeType("image/*")) {
-                            editPhoto(clipData.getItemAt(0).getUri(), clipData.getDescription().getMimeType(0));
-                        }
-                    }
-                }
                 return super.onTextContextMenuItem(id);
-            }
-
-            private void editPhoto(Uri uri, String mime) {
-                final File file = AndroidUtilities.generatePicturePath(fragment != null && fragment.isSecretChat(), MimeTypeMap.getSingleton().getExtensionFromMimeType(mime));
-                Utilities.globalQueue.postRunnable(() -> {
-                    try {
-                        InputStream in = context.getContentResolver().openInputStream(uri);
-                        FileOutputStream fos = new FileOutputStream(file);
-                        byte[] buffer = new byte[1024];
-                        int lengthRead;
-                        while ((lengthRead = in.read(buffer)) > 0) {
-                            fos.write(buffer, 0, lengthRead);
-                            fos.flush();
-                        }
-                        in.close();
-                        fos.close();
-                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, -1, 0, file.getAbsolutePath(), 0, false, 0, 0, 0);
-                        ArrayList<Object> entries = new ArrayList<>();
-                        entries.add(photoEntry);
-                        AndroidUtilities.runOnUIThread(() -> {
-                            openPhotoViewerForEdit(entries, file);
-                        });
-                    } catch (Throwable e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-
-            private void openPhotoViewerForEdit(ArrayList<Object> entries, File sourceFile) {
-                MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entries.get(0);
-                if (keyboardVisible) {
-                    AndroidUtilities.hideKeyboard(messageEditText);
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            openPhotoViewerForEdit(entries, sourceFile);
-                        }
-                    }, 100);
-                    return;
-                }
-
-                PhotoViewer.getInstance().setParentActivity(parentActivity, resourcesProvider);
-                PhotoViewer.getInstance().openPhotoForSelect(entries, 0, 2, false, new PhotoViewer.EmptyPhotoViewerProvider() {
-                    boolean sending;
-                    @Override
-                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
-                        ArrayList<SendMessagesHelper.SendingMediaInfo> photos = new ArrayList<>();
-                        SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
-                        if (!photoEntry.isVideo && photoEntry.imagePath != null) {
-                            info.path = photoEntry.imagePath;
-                        } else if (photoEntry.path != null) {
-                            info.path = photoEntry.path;
-                        }
-                        info.thumbPath = photoEntry.thumbPath;
-                        info.isVideo = photoEntry.isVideo;
-                        info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
-                        info.entities = photoEntry.entities;
-                        info.masks = photoEntry.stickers;
-                        info.ttl = photoEntry.ttl;
-                        info.videoEditedInfo = videoEditedInfo;
-                        info.canDeleteAfter = true;
-                        photos.add(info);
-                        photoEntry.reset();
-                        sending = true;
-                        SendMessagesHelper.prepareSendingMedia(accountInstance, photos, dialog_id, replyingMessageObject, getThreadMessage(), null, false, false, editingMessageObject, notify, scheduleDate);
-                        if (delegate != null) {
-                            delegate.onMessageSend(null, true, scheduleDate);
-                        }
-                    }
-
-                    @Override
-                    public void willHidePhotoViewer() {
-                        if (!sending) {
-                            try {
-                                sourceFile.delete();
-                            } catch (Throwable ignore) {
-
-                            }
-                        }
-                    }
-
-                    @Override
-                    public boolean canCaptureMorePhotos() {
-                        return false;
-                    }
-                }, parentFragment);
             }
 
             @Override
@@ -2070,6 +1951,38 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 return resourcesProvider;
             }
         };
+        if (parentFragment != null) {
+            ViewCompat.setOnReceiveContentListener(messageEditText, new String[]{"image/gif", "image/*", "image/jpg", "image/png", "image/webp"}, (view, payload) -> {
+                var split = payload.partition(
+                        item -> item.getUri() != null);
+                var uriContent = split.first;
+                var remaining = split.second;
+                if (uriContent != null) {
+                    var clip = uriContent.getClip();
+                    ArrayList<SendMessagesHelper.SendingMediaInfo> paths = new ArrayList<>();
+                    for (int i = 0; i < clip.getItemCount(); i++) {
+                        var uri = clip.getItemAt(i).getUri();
+                        var mimeType = clip.getDescription().getMimeType(i);
+                        if (clip.getItemCount() == 1 && (mimeType.equalsIgnoreCase("image/gif") || SendMessagesHelper.shouldSendWebPAsSticker(null, uri))) {
+                            if (isInScheduleMode()) {
+                                AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (notify, scheduleDate) -> send(mimeType, uri, notify, scheduleDate), resourcesProvider);
+                            } else {
+                                send(mimeType, uri, true, 0);
+                            }
+                        } else {
+                            var info = new SendMessagesHelper.SendingMediaInfo();
+                            info.uri = uri;
+                            paths.add(info);
+                        }
+                    }
+                    if (!paths.isEmpty()) {
+                        parentFragment.openPhotosEditor(paths, getFieldText());
+                    }
+                }
+                return remaining;
+            });
+        }
+        messageEditText.setShowDisableMarkdown(true);
         messageEditText.setDelegate(() -> {
             messageEditText.invalidateEffects();
             if (delegate != null) {
@@ -2514,9 +2427,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 }
             }
             if (delegate.getSendAsPeers() != null) {
+                try {
+                    v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                } catch (Exception ignored) {}
                 if (senderSelectPopupWindow != null) {
                     senderSelectPopupWindow.setPauseNotifications(false);
-                    senderSelectPopupWindow.dismiss();
+                    senderSelectPopupWindow.startDismissAnimation();
                     return;
                 }
                 MessagesController controller = MessagesController.getInstance(currentAccount);
@@ -2525,151 +2441,10 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     return;
                 }
 
-                List<TLRPC.Peer> peers = delegate.getSendAsPeers().peers;
-
                 ViewGroup fl = parentFragment.getParentLayout();
-                FrameLayout scrimPopupContainerLayout = new FrameLayout(getContext()) {
-                    @Override
-                    public boolean dispatchKeyEvent(KeyEvent event) {
-                        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && senderSelectPopupWindow != null && senderSelectPopupWindow.isShowing()) {
-                            senderSelectPopupWindow.dismiss();
-                        }
-                        return super.dispatchKeyEvent(event);
-                    }
-                };
-                scrimPopupContainerLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-                Drawable shadowDrawable2 = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert).mutate();
-                shadowDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-                scrimPopupContainerLayout.setBackground(shadowDrawable2);
 
-                View dim = new View(getContext());
-                dim.setBackgroundColor(0x33000000);
-
-                int maxHeight = AndroidUtilities.dp(450);
-                LinearLayout rc = new LinearLayout(getContext()) {
-                    @Override
-                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(MeasureSpec.getSize(heightMeasureSpec), maxHeight), MeasureSpec.getMode(heightMeasureSpec)));
-                    }
-                };
-                rc.setOrientation(LinearLayout.VERTICAL);
-                TextView headerText = new TextView(parent.getContext());
-                headerText.setTextColor(Theme.getColor(Theme.key_dialogTextBlue));
-                headerText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                headerText.setText(LocaleController.getString("SendMessageAsTitle", R.string.SendMessageAsTitle));
-                headerText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), Typeface.BOLD);
-                int dp = AndroidUtilities.dp(18);
-                headerText.setPadding(dp, AndroidUtilities.dp(13), dp, AndroidUtilities.dp(13));
-                rc.addView(headerText);
-
-                View shadow = new View(getContext());
-                shadow.setAlpha(0);
-                FrameLayout rfl = new FrameLayout(getContext());
-                RecyclerListView rv = new RecyclerListView(getContext());
-                LinearLayoutManager llm = new LinearLayoutManager(getContext());
-                AtomicReference<ValueAnimator.AnimatorUpdateListener> animatorUpdateListenerRef = new AtomicReference<>();
-                AtomicReference<Animator.AnimatorListener> animatorListenerRef = new AtomicReference<>();
-                AtomicReference<Animator> animatorForSetRef = new AtomicReference<>();
-                rv.setLayoutManager(llm);
-                rv.setAdapter(new RecyclerListView.SelectionAdapter() {
-                    @Override
-                    public boolean isEnabled(RecyclerView.ViewHolder holder) {
-                        return true;
-                    }
-
-                    final Object avatar = new Object(), title = new Object(), subtitle = new Object();
-
-
-                    @NonNull
-                    @Override
-                    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                        FrameLayout fl = new FrameLayout(parent.getContext());
-                        LinearLayout ll = new LinearLayout(parent.getContext());
-                        ll.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                        ll.setOrientation(LinearLayout.HORIZONTAL);
-                        ll.setGravity(Gravity.CENTER_VERTICAL);
-                        int dp = AndroidUtilities.dp(14);
-                        ll.setPadding(dp, dp / 2, dp, dp / 2);
-
-                        SimpleAvatarView avatar = new SimpleAvatarView(parent.getContext());
-                        avatar.setTag(this.avatar);
-                        ll.addView(avatar, LayoutHelper.createLinear(44, 44));
-
-                        LinearLayout ll2 = new LinearLayout(ll.getContext());
-                        ll2.setOrientation(LinearLayout.VERTICAL);
-
-                        TextView title = new TextView(parent.getContext());
-                        title.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-                        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                        title.setTag(this.title);
-                        title.setMaxLines(1);
-                        title.setEllipsize(TextUtils.TruncateAt.END);
-                        ll2.addView(title);
-
-                        TextView subtitle = new TextView(parent.getContext());
-                        subtitle.setTextColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), 0x66));
-                        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                        subtitle.setTag(this.subtitle);
-                        subtitle.setMaxLines(1);
-                        subtitle.setEllipsize(TextUtils.TruncateAt.END);
-                        ll2.addView(subtitle);
-
-                        ll.addView(ll2, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f, 12, 0, 0, 0));
-
-                        View v = new View(parent.getContext());
-                        fl.addView(ll);
-                        fl.addView(v);
-
-                        return new RecyclerListView.Holder(fl);
-                    }
-
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                        TLRPC.Peer peer = peers.get(position);
-                        long peerId = 0;
-
-                        if (peer.channel_id != 0)  {
-                            peerId = -peer.channel_id;
-                        }
-                        if (peerId == 0 && peer.user_id != 0)  {
-                            peerId = peer.user_id;
-                        }
-
-                        SimpleAvatarView avatar = holder.itemView.findViewWithTag(this.avatar);
-                        TextView title = holder.itemView.findViewWithTag(this.title);
-                        TextView subtitle = holder.itemView.findViewWithTag(this.subtitle);
-
-                        if (peerId < 0) {
-                            TLRPC.Chat chat = controller.getChat(-peerId);
-                            if (chat != null) {
-                                title.setText(chat.title);
-                                subtitle.setText(LocaleController.formatPluralString(ChatObject.isChannel(chat) && !chat.megagroup ? "Subscribers" : "Members", chat.participants_count));
-                                avatar.setAvatar(chat);
-                            }
-                            avatar.setSelected(chatFull.default_send_as != null && chatFull.default_send_as.channel_id == peer.channel_id, false);
-                            holder.itemView.setSelected(chatFull.default_send_as != null && chatFull.default_send_as.channel_id == peer.channel_id);
-                        } else {
-                            TLRPC.User user = controller.getUser(peerId);
-                            if (user != null) {
-                                title.setText(user.first_name + (user.last_name != null ? " " + user.last_name : ""));
-                                subtitle.setText(LocaleController.getString("VoipGroupPersonalAccount", R.string.VoipGroupPersonalAccount));
-                                avatar.setAvatar(user);
-                            }
-                            avatar.setSelected(chatFull.default_send_as != null && chatFull.default_send_as.user_id == peer.user_id, false);
-                            holder.itemView.setSelected(chatFull.default_send_as != null && chatFull.default_send_as.channel_id == peer.channel_id);
-                        }
-                    }
-
-                    @Override
-                    public int getItemCount() {
-                        return peers.size();
-                    }
-                });
-                rv.setOnItemClickListener((view, position) -> {
-                    if (senderSelectPopupWindow == null)
-                        return;
-                    TLRPC.Peer peer = peers.get(position);
+                senderSelectPopupWindow = new SenderSelectPopup(context, parentFragment, controller, chatFull, delegate.getSendAsPeers(), (recyclerView, senderView, peer) -> {
+                    if (senderSelectPopupWindow == null) return;
                     if (chatFull != null) {
                         chatFull.default_send_as = peer;
                         updateSendAsButton();
@@ -2678,10 +2453,9 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     parentFragment.getMessagesController().setDefaultSendAs(dialog_id, peer.user_id != 0 ? peer.user_id : -peer.channel_id);
 
                     int[] loc = new int[2];
-                    SimpleAvatarView sAvatar = (SimpleAvatarView) ((ViewGroup)((ViewGroup) view).getChildAt(0)).getChildAt(0);
-                    boolean wasSelected = sAvatar.isSelected();
-                    sAvatar.getLocationInWindow(loc);
-                    sAvatar.setSelected(true, true);
+                    boolean wasSelected = senderView.avatar.isSelected();
+                    senderView.avatar.getLocationInWindow(loc);
+                    senderView.avatar.setSelected(true, true);
 
                     SimpleAvatarView avatar = new SimpleAvatarView(getContext());
                     if (peer.channel_id != 0) {
@@ -2695,223 +2469,185 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                             avatar.setAvatar(user);
                         }
                     }
-                    for (int i = 0; i < rv.getChildCount(); i++) {
-                        View ch = rv.getChildAt(i);
-                        if (i != position) {
-                            ((SimpleAvatarView) ((ViewGroup)((ViewGroup) ch).getChildAt(0)).getChildAt(0)).setSelected(false, true);
+                    for (int i = 0; i < recyclerView.getChildCount(); i++) {
+                        View ch = recyclerView.getChildAt(i);
+                        if (ch instanceof SenderSelectPopup.SenderView && ch != senderView) {
+                            SenderSelectPopup.SenderView childSenderView = (SenderSelectPopup.SenderView) ch;
+                            childSenderView.avatar.setSelected(false, true);
                         }
                     }
 
-                    Dialog d = new Dialog(getContext(), R.style.TransparentDialogNoAnimation);
-                    FrameLayout aFrame = new FrameLayout(getContext());
-                    aFrame.addView(avatar, LayoutHelper.createFrame(44, 44, Gravity.LEFT));
-                    d.setContentView(aFrame);
-                    d.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-                        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-                        d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                        d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-                        d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-                        d.getWindow().getAttributes().windowAnimations = 0;
-                        d.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-                        d.getWindow().setStatusBarColor(0);
-                        d.getWindow().setNavigationBarColor(0);
+                    AndroidUtilities.runOnUIThread(()->{
+                        Dialog d = new Dialog(getContext(), R.style.TransparentDialogNoAnimation);
+                        FrameLayout aFrame = new FrameLayout(getContext());
+                        aFrame.addView(avatar, LayoutHelper.createFrame(SenderSelectPopup.AVATAR_SIZE_DP, SenderSelectPopup.AVATAR_SIZE_DP, Gravity.LEFT));
+                        d.setContentView(aFrame);
+                        d.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                            d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                            d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+                            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+                            d.getWindow().getAttributes().windowAnimations = 0;
+                            d.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                            d.getWindow().setStatusBarColor(0);
+                            d.getWindow().setNavigationBarColor(0);
 
-                        int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
-                        AndroidUtilities.setLightStatusBar(d.getWindow(), color == Color.WHITE);
+                            int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+                            AndroidUtilities.setLightStatusBar(d.getWindow(), color == Color.WHITE);
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            int color2 = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
-                            float brightness = AndroidUtilities.computePerceivedBrightness(color2);
-                            AndroidUtilities.setLightNavigationBar(d.getWindow(), brightness >= 0.721f);
-                        }
-                    }
-                    float offX = 0, offY = 0;
-                    if (AndroidUtilities.isTablet()) {
-                        parentFragment.getFragmentView().getLocationInWindow(location);
-                        popupX += location[0];
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        WindowInsets wi = getRootWindowInsets();
-                        popupX += wi.getSystemWindowInsetLeft();
-                    }
-
-                    senderSelectView.getLocationInWindow(location);
-                    float eX = location[0], eY = location[1];
-
-                    float off = wasSelected ? AndroidUtilities.dp(5) : 0;
-                    float sX = loc[0] + popupX + off + AndroidUtilities.dp(4) + offX, sY = loc[1] + popupY + off + offY;
-                    avatar.setTranslationX(sX);
-                    avatar.setTranslationY(sY);
-
-                    float sSc = wasSelected ? 34f / 44f : 1, eSc = senderSelectView.getLayoutParams().width / (float)AndroidUtilities.dp(44);
-                    avatar.setPivotX(0);
-                    avatar.setPivotY(0);
-                    avatar.setScaleX(sSc);
-                    avatar.setScaleY(sSc);
-
-                    animatorListenerRef.set(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            avatar.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-                                @Override
-                                public void onDraw() {
-                                    avatar.post(()->{
-                                        avatar.getViewTreeObserver().removeOnDrawListener(this);
-                                        sAvatar.setHideAvatar(true);
-                                    });
-                                }
-                            });
-                            d.show();
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            senderSelectView.setProgress(0, false);
-                            senderSelectView.setScaleX(1);
-                            senderSelectView.setScaleY(1);
-                            senderSelectView.setAlpha(1);
-                            senderSelectView.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-                                @Override
-                                public void onDraw() {
-                                    senderSelectView.post(()->{
-                                        senderSelectView.getViewTreeObserver().removeOnDrawListener(this);
-                                        d.dismiss();
-                                    });
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-                            onAnimationEnd(animation);
-                        }
-                    });
-                    animatorUpdateListenerRef.set(animation -> {
-                        float f = (float) animation.getAnimatedValue();
-
-                        float selSc = 0.5f + f * 0.5f;
-                        senderSelectView.setScaleX(selSc);
-                        senderSelectView.setScaleY(selSc);
-                        senderSelectView.setAlpha(f);
-                    });
-                    ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(350);
-                    float pos = (rv.getY() + rv.getMeasuredHeight() - loc[1]) / (float)AndroidUtilities.dp(58);
-                    float mAmplitude = 0.18f - pos * 0.009f,
-                            mFrequency = 5.7f - pos * 0.325f;
-                    anim.setInterpolator(time -> (float) (-1 * Math.pow(Math.E, -time / mAmplitude) *
-                            Math.cos(mFrequency * time) + 1));
-                    anim.addUpdateListener(animation -> {
-                        float val = (float) animation.getAnimatedValue();
-                        avatar.setTranslationX(sX + (eX - sX) * val);
-                        avatar.setTranslationY(sY + (eY - sY) * val);
-                        float sc = sSc + (eSc - sSc) * val;
-                        avatar.setScaleX(sc);
-                        avatar.setScaleY(sc);
-                    });
-                    animatorForSetRef.set(anim);
-
-                    senderSelectPopupWindow.dismiss();
-                });
-                int shadowDuration = 150;
-                rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                    Boolean isVisible;
-
-                    @Override
-                    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                        boolean v = llm.findFirstCompletelyVisibleItemPosition() == 0;
-                        if (isVisible == null || v != isVisible) {
-                            shadow.animate().cancel();
-                            if (v) {
-                                shadow.animate().alpha(0).setDuration(shadowDuration).start();
-                            } else {
-                                shadow.animate().alpha(1).setDuration(shadowDuration).start();
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                int color2 = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
+                                float brightness = AndroidUtilities.computePerceivedBrightness(color2);
+                                AndroidUtilities.setLightNavigationBar(d.getWindow(), brightness >= 0.721f);
                             }
-                            isVisible = v;
                         }
-                    }
-                });
-                rv.setOverScrollMode(OVER_SCROLL_NEVER);
-                rfl.addView(rv);
+                        float offX = 0, offY = 0;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            WindowInsets wi = getRootWindowInsets();
+                            popupX += wi.getSystemWindowInsetLeft();
+                        }
 
-                Drawable d = Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
-                shadow.setBackground(d);
-                rfl.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 4));
+                        senderSelectView.getLocationInWindow(location);
+                        float endX = location[0], endY = location[1];
 
-                rc.addView(rfl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                scrimPopupContainerLayout.addView(rc);
+                        float off = AndroidUtilities.dp(5);
+                        float startX = loc[0] + popupX + off + AndroidUtilities.dp(4) + offX, startY = loc[1] + popupY + off + offY;
+                        avatar.setTranslationX(startX);
+                        avatar.setTranslationY(startY);
 
-                senderSelectPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
-                    private void dismissSuper() {
-                        super.dismiss();
-                    }
+                        float startScale = (float) (SenderSelectPopup.AVATAR_SIZE_DP - 10) / SenderSelectPopup.AVATAR_SIZE_DP, endScale = senderSelectView.getLayoutParams().width / (float)AndroidUtilities.dp(SenderSelectPopup.AVATAR_SIZE_DP);
+                        avatar.setPivotX(0);
+                        avatar.setPivotY(0);
+                        avatar.setScaleX(startScale);
+                        avatar.setScaleY(startScale);
 
+                        avatar.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
+                            @Override
+                            public void onDraw() {
+                                avatar.post(()->{
+                                    avatar.getViewTreeObserver().removeOnDrawListener(this);
+                                    senderView.avatar.setHideAvatar(true);
+                                });
+                            }
+                        });
+                        d.show();
+
+                        senderSelectView.setScaleX(1f);
+                        senderSelectView.setScaleY(1f);
+                        senderSelectView.setAlpha(1f);
+
+                        float translationStiffness = 700f;
+                        senderSelectPopupWindow.startDismissAnimation(
+                                new SpringAnimation(senderSelectView, DynamicAnimation.SCALE_X)
+                                        .setSpring(new SpringForce(0.5f)
+                                                .setStiffness(SenderSelectPopup.SPRING_STIFFNESS)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)),
+                                new SpringAnimation(senderSelectView, DynamicAnimation.SCALE_Y)
+                                        .setSpring(new SpringForce(0.5f)
+                                                .setStiffness(SenderSelectPopup.SPRING_STIFFNESS)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)),
+                                new SpringAnimation(senderSelectView, DynamicAnimation.ALPHA)
+                                        .setSpring(new SpringForce(0f)
+                                                .setStiffness(SenderSelectPopup.SPRING_STIFFNESS)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                                        .addEndListener((animation, canceled, value, velocity) -> {
+                                            if (d.isShowing()) {
+                                                avatar.setTranslationX(endX);
+                                                avatar.setTranslationY(endY);
+
+                                                senderSelectView.setProgress(0, false);
+                                                senderSelectView.setScaleX(1);
+                                                senderSelectView.setScaleY(1);
+                                                senderSelectView.setAlpha(1);
+
+                                                senderSelectView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                                    @Override
+                                                    public boolean onPreDraw() {
+                                                        senderSelectView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                                        senderSelectView.postDelayed(d::dismiss, 100);
+                                                        return true;
+                                                    }
+                                                });
+                                            }
+                                        }),
+                                new SpringAnimation(avatar, DynamicAnimation.TRANSLATION_X)
+                                        .setStartValue(MathUtils.clamp(startX, endX - AndroidUtilities.dp(6), startX))
+                                        .setSpring(new SpringForce(endX)
+                                                .setStiffness(translationStiffness)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY))
+                                        .setMinValue(endX - AndroidUtilities.dp(6)),
+                                new SpringAnimation(avatar, DynamicAnimation.TRANSLATION_Y)
+                                        .setStartValue(MathUtils.clamp(startY, startY, endY + AndroidUtilities.dp(6)))
+                                        .setSpring(new SpringForce(endY)
+                                                .setStiffness(translationStiffness)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY))
+                                        .setMaxValue(endY + AndroidUtilities.dp(6))
+                                        .addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
+                                            boolean performedHapticFeedback = false;
+
+                                            @Override
+                                            public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
+                                                if (!performedHapticFeedback && value >= endY) {
+                                                    performedHapticFeedback = true;
+                                                    try {
+                                                        avatar.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                                    } catch (Exception ignored) {}
+                                                }
+                                            }
+                                        })
+                                        .addEndListener((animation, canceled, value, velocity) -> {
+                                            if (d.isShowing()) {
+                                                avatar.setTranslationX(endX);
+                                                avatar.setTranslationY(endY);
+
+                                                senderSelectView.setProgress(0, false);
+                                                senderSelectView.setScaleX(1);
+                                                senderSelectView.setScaleY(1);
+                                                senderSelectView.setAlpha(1);
+
+                                                senderSelectView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                                    @Override
+                                                    public boolean onPreDraw() {
+                                                        senderSelectView.getViewTreeObserver().removeOnPreDrawListener(this);
+                                                        senderSelectView.postDelayed(d::dismiss, 100);
+                                                        return true;
+                                                    }
+                                                });
+                                            }
+                                        }),
+                                new SpringAnimation(avatar, DynamicAnimation.SCALE_X)
+                                        .setSpring(new SpringForce(endScale)
+                                                .setStiffness(1000f)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)),
+                                new SpringAnimation(avatar, DynamicAnimation.SCALE_Y)
+                                        .setSpring(new SpringForce(endScale)
+                                                .setStiffness(1000f)
+                                                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)));
+                    }, wasSelected ? 0 : SimpleAvatarView.SELECT_ANIMATION_DURATION);
+                }) {
                     @Override
                     public void dismiss() {
                         if (senderSelectPopupWindow != this) {
-                            fl.removeView(dim);
+                            fl.removeView(dimView);
                             super.dismiss();
                             return;
                         }
 
-                        float scStart = 0.25f;
-
-                        scrimPopupContainerLayout.setPivotX(AndroidUtilities.dp(8));
-                        scrimPopupContainerLayout.setPivotY(scrimPopupContainerLayout.getMeasuredHeight() - AndroidUtilities.dp(8));
-                        rc.setPivotX(0);
-                        rc.setPivotY(0);
-
-                        scrimPopupContainerLayout.setScaleX(1);
-                        scrimPopupContainerLayout.setScaleY(1);
-                        rc.setAlpha(1);
-
-                        dim.setAlpha(1);
-                        AnimatorSet animatorSet = new AnimatorSet();
-                        ValueAnimator anim = ValueAnimator.ofFloat(1, 0).setDuration(220);
-                        anim.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-                        anim.addUpdateListener(animation -> {
-                            float val = (float) animation.getAnimatedValue();
-                            float sc = scStart + (1f - scStart) * val;
-                            scrimPopupContainerLayout.setScaleX(sc);
-                            scrimPopupContainerLayout.setScaleY(sc);
-                            scrimPopupContainerLayout.setAlpha(val);
-                            rc.setScaleX(1f / sc);
-                            rc.setScaleY(1f / sc);
-                            rc.setAlpha(sc);
-
-                            dim.setAlpha(val);
-                        });
-                        animatorSet.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                fl.removeView(dim);
-                                dismissSuper();
-                            }
-                        });
-
-                        ValueAnimator anim2 = ValueAnimator.ofFloat(1, 0).setDuration(350);
-                        anim2.setInterpolator(Easings.easeOutSine);
-                        ValueAnimator.AnimatorUpdateListener l = animatorUpdateListenerRef.get();
-                        if (l != null) {
-                            anim2.addUpdateListener(l);
-                        }
-                        Animator.AnimatorListener l2 = animatorListenerRef.get();
-                        if (l2 != null) {
-                            anim2.addListener(l2);
-                        }
-
-                        animatorSet.playTogether(anim, anim2);
-
                         senderSelectPopupWindow = null;
-                        if (l == null && l2 == null) senderSelectView.setProgress(0);
 
-                        Animator secAnim = animatorForSetRef.get();
-                        if (secAnim != null) {
-                            animatorSet.playTogether(secAnim);
+                        if (!runningCustomSprings) {
+                            startDismissAnimation();
+                            senderSelectView.setProgress(0, true, true);
+                        } else {
+                            for (SpringAnimation springAnimation : springAnimations) {
+                                springAnimation.cancel();
+                            }
+                            springAnimations.clear();
+                            super.dismiss();
                         }
-                        animatorSet.start();
                     }
                 };
                 senderSelectPopupWindow.setPauseNotifications(true);
@@ -2919,34 +2655,11 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 senderSelectPopupWindow.setOutsideTouchable(true);
                 senderSelectPopupWindow.setClippingEnabled(true);
                 senderSelectPopupWindow.setFocusable(true);
-                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+                senderSelectPopupWindow.getContentView().measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
                 senderSelectPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
                 senderSelectPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
                 senderSelectPopupWindow.getContentView().setFocusableInTouchMode(true);
                 senderSelectPopupWindow.setAnimationEnabled(false);
-
-                TLRPC.Peer defPeer = chatFull.default_send_as != null ? chatFull.default_send_as : null;
-                if (defPeer != null) {
-                    int itemHeight = AndroidUtilities.dp(14 + 44);
-                    int totalRecyclerHeight = peers.size() * itemHeight;
-                    for (int i = 0; i < peers.size(); i++) {
-                        TLRPC.Peer p = peers.get(i);
-                        if (p.channel_id != 0 && p.channel_id == defPeer.channel_id || p.user_id != 0 && p.user_id == defPeer.user_id ||
-                                p.chat_id != 0 && p.chat_id == defPeer.chat_id) {
-                            int off = 0;
-                            if (i != peers.size() - 1 && rv.getMeasuredHeight() < totalRecyclerHeight) {
-                                off = rv.getMeasuredHeight() % itemHeight;
-                            }
-
-                            llm.scrollToPositionWithOffset(i, off + AndroidUtilities.dp(7) + (totalRecyclerHeight - (peers.size() - 2) * itemHeight));
-                            if (rv.computeVerticalScrollOffset() > 0) {
-                                shadow.animate().cancel();
-                                shadow.animate().alpha(1).setDuration(shadowDuration).start();
-                            }
-                            break;
-                        }
-                    }
-                }
 
                 int pad = -AndroidUtilities.dp(4);
                 int[] location = new int[2];
@@ -2956,7 +2669,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     popupX += location[0];
                 }
                 int totalHeight = delegate.getContentViewHeight();
-                int height = scrimPopupContainerLayout.getMeasuredHeight();
+                int height = senderSelectPopupWindow.getContentView().getMeasuredHeight();
                 int keyboard = delegate.measureKeyboardHeight();
                 if (keyboard <= AndroidUtilities.dp(20)) {
                     totalHeight += keyboard;
@@ -2967,44 +2680,18 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
                 int shadowPad = AndroidUtilities.dp(1);
                 int popupY;
-                if (height < totalHeight + pad * 2 - (parentFragment.isInBubbleMode() ? 0 : AndroidUtilities.statusBarHeight) - headerText.getMeasuredHeight()) {
+                if (height < totalHeight + pad * 2 - (parentFragment.isInBubbleMode() ? 0 : AndroidUtilities.statusBarHeight) - senderSelectPopupWindow.headerText.getMeasuredHeight()) {
                     ChatActivityEnterView.this.getLocationInWindow(location);
                     popupY = location[1] - height - pad - AndroidUtilities.dp(2);
-                    fl.addView(dim, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, popupY + pad + height + shadowPad + AndroidUtilities.dp(2)));
+                    fl.addView(senderSelectPopupWindow.dimView, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, popupY + pad + height + shadowPad + AndroidUtilities.dp(2)));
                 } else {
                     popupY = parentFragment.isInBubbleMode() ? 0 : AndroidUtilities.statusBarHeight;
                     int off = AndroidUtilities.dp(14);
-                    rc.getLayoutParams().height = totalHeight - popupY - off - getHeightWithTopView();
-                    fl.addView(dim, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, off + popupY + rc.getLayoutParams().height + shadowPad));
+                    senderSelectPopupWindow.recyclerContainer.getLayoutParams().height = totalHeight - popupY - off - getHeightWithTopView();
+                    fl.addView(senderSelectPopupWindow.dimView, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, off + popupY + senderSelectPopupWindow.recyclerContainer.getLayoutParams().height + shadowPad));
                 }
 
-                float scStart = 0.25f;
-
-                scrimPopupContainerLayout.setPivotX(AndroidUtilities.dp(8));
-                scrimPopupContainerLayout.setPivotY(scrimPopupContainerLayout.getMeasuredHeight() - AndroidUtilities.dp(8));
-                rc.setPivotX(0);
-                rc.setPivotY(0);
-
-                scrimPopupContainerLayout.setScaleX(scStart);
-                scrimPopupContainerLayout.setScaleY(scStart);
-                rc.setAlpha(scStart);
-
-                dim.setAlpha(0);
-
-                ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(220);
-                anim.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-                anim.addUpdateListener(animation -> {
-                    float val = (float) animation.getAnimatedValue();
-                    float sc = scStart + (1f - scStart) * val;
-                    scrimPopupContainerLayout.setScaleX(sc);
-                    scrimPopupContainerLayout.setScaleY(sc);
-                    rc.setScaleX(1f / sc);
-                    rc.setScaleY(1f / sc);
-                    rc.setAlpha(sc);
-
-                    dim.setAlpha(val);
-                });
-                anim.start();
+                senderSelectPopupWindow.startShowAnimation();
 
                 senderSelectPopupWindow.showAtLocation(v, Gravity.LEFT | Gravity.TOP, this.popupX = popupX, this.popupY = popupY);
                 senderSelectView.setProgress(1);
@@ -3681,6 +3368,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         return result;
     }
 
+    public boolean allowBlur = true;
     Paint backgroundPaint = new Paint();
     @Override
     protected void onDraw(Canvas canvas) {
@@ -3692,12 +3380,16 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
 
         Theme.chat_composeShadowDrawable.setBounds(0, top, getMeasuredWidth(), bottom);
         Theme.chat_composeShadowDrawable.draw(canvas);
-        backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
-        if (SharedConfig.chatBlurEnabled() && chatActivity != null) {
-            AndroidUtilities.rectTmp2.set(0, bottom, getWidth(), getHeight());
-            chatActivity.contentView.drawBlur(canvas, getY(), AndroidUtilities.rectTmp2, backgroundPaint, false);
+        if (allowBlur) {
+            backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
+            if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
+                AndroidUtilities.rectTmp2.set(0, bottom, getWidth(), getHeight());
+                sizeNotifierLayout.drawBlur(canvas, getTop(), AndroidUtilities.rectTmp2, backgroundPaint, false);
+            } else {
+                canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
+            }
         } else {
-            canvas.drawRect(0, bottom, getWidth(), getHeight(), backgroundPaint);
+            canvas.drawRect(0, bottom, getWidth(), getHeight(), getThemedPaint(Theme.key_paint_chatComposeBackground));
         }
     }
 
@@ -6451,9 +6143,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                                 stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) entity).user_id, 3), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             } else if (entity instanceof TLRPC.TL_messageEntityCode || entity instanceof TLRPC.TL_messageEntityPre) {
                                 TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.start = entity.offset;
+                                run.end = entity.offset + entity.length;
                                 run.flags |= TextStyleSpan.FLAG_STYLE_MONO;
                                 run.urlEntity = entity;
                                 MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                                SyntaxHighlight.highlight(run, stringBuilder);
                             } else if (entity instanceof TLRPC.TL_messageEntityBold) {
                                 TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
                                 run.flags |= TextStyleSpan.FLAG_STYLE_BOLD;
@@ -6903,43 +6598,47 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
             }
         }
         boolean wasVisible = senderSelectView.getVisibility() == View.VISIBLE;
-        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 && !isEditingMessage() && !isRecordingAudioVideo() && recordedAudioPanel.getVisibility() != View.VISIBLE;
+        boolean isVisible = delegate.getSendAsPeers() != null && defPeer != null && delegate.getSendAsPeers().peers.size() > 1 &&
+                !isEditingMessage() && !isRecordingAudioVideo() && recordedAudioPanel.getVisibility() != View.VISIBLE;
         int pad = AndroidUtilities.dp(2);
         MarginLayoutParams params = (MarginLayoutParams) senderSelectView.getLayoutParams();
-        float sA = isVisible ? 0 : 1;
-        float sX = isVisible ? -senderSelectView.getLayoutParams().width - params.leftMargin - pad : 0;
-        float eA = isVisible ? 1 : 0;
-        float eX = isVisible ? 0 : -senderSelectView.getLayoutParams().width - params.leftMargin - pad;
+        float startAlpha = isVisible ? 0 : 1;
+        float startX = isVisible ? -senderSelectView.getLayoutParams().width - params.leftMargin - pad : 0;
+        float endAlpha = isVisible ? 1 : 0;
+        float endX = isVisible ? 0 : -senderSelectView.getLayoutParams().width - params.leftMargin - pad;
 
         if (wasVisible != isVisible) {
-            ValueAnimator a = (ValueAnimator) senderSelectView.getTag();
-            if (a != null) {
-                a.cancel();
+            ValueAnimator animator = (ValueAnimator) senderSelectView.getTag();
+            if (animator != null) {
+                animator.cancel();
                 senderSelectView.setTag(null);
             }
 
             if (parentFragment.getOtherSameChatsDiff() == 0 && parentFragment.fragmentOpened) {
                 ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(150);
-                senderSelectView.setTranslationX(sX);
+                senderSelectView.setTranslationX(startX);
                 messageEditText.setTranslationX(senderSelectView.getTranslationX());
                 anim.addUpdateListener(animation -> {
                     float val = (float) animation.getAnimatedValue();
 
-                    senderSelectView.setAlpha(sA + (eA - sA) * val);
-                    senderSelectView.setTranslationX(sX + (eX - sX) * val);
-                    for (ImageView emoji : emojiButton)
+                    senderSelectView.setAlpha(startAlpha + (endAlpha - startAlpha) * val);
+                    senderSelectView.setTranslationX(startX + (endX - startX) * val);
+                    for (ImageView emoji : emojiButton) {
                         emoji.setTranslationX(senderSelectView.getTranslationX());
+                    }
                     messageEditText.setTranslationX(senderSelectView.getTranslationX());
                 });
                 anim.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationStart(Animator animation) {
-                        if (isVisible)
+                        if (isVisible) {
                             senderSelectView.setVisibility(VISIBLE);
-                        senderSelectView.setAlpha(sA);
-                        senderSelectView.setTranslationX(sX);
-                        for (ImageView emoji : emojiButton)
+                        }
+                        senderSelectView.setAlpha(startAlpha);
+                        senderSelectView.setTranslationX(startX);
+                        for (ImageView emoji : emojiButton) {
                             emoji.setTranslationX(senderSelectView.getTranslationX());
+                        }
                         messageEditText.setTranslationX(senderSelectView.getTranslationX());
 
                         if (botCommandsMenuButton.getTag() == null) {
@@ -6951,8 +6650,9 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                     public void onAnimationEnd(Animator animation) {
                         if (!isVisible) {
                             senderSelectView.setVisibility(GONE);
-                            for (ImageView emoji : emojiButton)
+                            for (ImageView emoji : emojiButton) {
                                 emoji.setTranslationX(0);
+                            }
                             messageEditText.setTranslationX(0);
                         }
                     }
@@ -6964,10 +6664,11 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                         } else {
                             senderSelectView.setVisibility(GONE);
                         }
-                        senderSelectView.setAlpha(eA);
-                        senderSelectView.setTranslationX(eX);
-                        for (ImageView emoji : emojiButton)
+                        senderSelectView.setAlpha(endAlpha);
+                        senderSelectView.setTranslationX(endX);
+                        for (ImageView emoji : emojiButton) {
                             emoji.setTranslationX(senderSelectView.getTranslationX());
+                        }
                         messageEditText.setTranslationX(senderSelectView.getTranslationX());
 
                         requestLayout();
@@ -6977,11 +6678,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                 senderSelectView.setTag(anim);
             } else {
                 senderSelectView.setVisibility(isVisible ? VISIBLE : GONE);
-                senderSelectView.setTranslationX(eX);
-                for (ImageView emoji : emojiButton)
-                    emoji.setTranslationX(eX);
-                messageEditText.setTranslationX(eX);
-                senderSelectView.setAlpha(eA);
+                senderSelectView.setTranslationX(endX);
+                for (ImageView emoji : emojiButton) {
+                    emoji.setTranslationX(endX);
+                }
+                messageEditText.setTranslationX(endX);
+                senderSelectView.setAlpha(endAlpha);
                 senderSelectView.setTag(null);
             }
         }
@@ -7475,13 +7177,13 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
                             if (trendingStickersAlert == this) {
                                 trendingStickersAlert = null;
                             }
-                            if (delegate != null) {
-                                delegate.onTrendingStickersShowed(false);
+                            if (ChatActivityEnterView.this.delegate != null) {
+                                ChatActivityEnterView.this.delegate.onTrendingStickersShowed(false);
                             }
                         }
                     };
-                    if (delegate != null) {
-                        delegate.onTrendingStickersShowed(true);
+                    if (ChatActivityEnterView.this.delegate != null) {
+                        ChatActivityEnterView.this.delegate.onTrendingStickersShowed(true);
                     }
                     trendingStickersAlert.show();
                 }
@@ -8644,7 +8346,7 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
         return adjustPanLayoutHelper;
     }
 
-    public boolean pannelAniamationInProgress() {
+    public boolean panelAnimationInProgress() {
         return panelAnimation != null;
     }
 
@@ -9194,11 +8896,12 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
             }
             ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(57) + botCommandsMenuButton.getMeasuredWidth();
         } else if (senderSelectView != null && senderSelectView.getVisibility() == View.VISIBLE) {
-            senderSelectView.measure(widthMeasureSpec, heightMeasureSpec);
+            int width = senderSelectView.getLayoutParams().width, height = senderSelectView.getLayoutParams().height;
+            senderSelectView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
             for (int i = 0; i < emojiButton.length; i++) {
-                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(16) + senderSelectView.getLayoutParams().width;
+                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(16) + width;
             }
-            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(63) + senderSelectView.getLayoutParams().width;
+            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(63) + width;
         } else {
             for (int i = 0; i < emojiButton.length; i++) {
                 ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(3);
@@ -9307,5 +9010,61 @@ public class ChatActivityEnterView extends ChatBlurredFrameLayout implements Not
     private Paint getThemedPaint(String paintKey) {
         Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(paintKey) : null;
         return paint != null ? paint : Theme.getThemePaint(paintKey);
+    }
+
+    private final static class AppCompatReceiveContentHelper {
+        static void maybeHandleMenuActionViaPerformReceiveContent(@NonNull TextView view,
+                                                                     int actionId) {
+            if (Build.VERSION.SDK_INT >= 31
+                    || ViewCompat.getOnReceiveContentMimeTypes(view) == null
+                    || actionId != android.R.id.paste) {
+                return;
+            }
+            ClipboardManager cm = (ClipboardManager) view.getContext().getSystemService(
+                    Context.CLIPBOARD_SERVICE);
+            ClipData clip = (cm == null) ? null : cm.getPrimaryClip();
+            if (clip != null && clip.getItemCount() > 0 && clip.getDescription().hasMimeType("image/*")) {
+                ContentInfoCompat payload = new ContentInfoCompat.Builder(clip, ContentInfoCompat.SOURCE_CLIPBOARD)
+                        .setFlags(0)
+                        .build();
+                ViewCompat.performReceiveContent(view, payload);
+            }
+        }
+
+        static void maybeHandleDragEventViaPerformReceiveContent(@NonNull TextView view,
+                                                                    @NonNull DragEvent event) {
+            if (Build.VERSION.SDK_INT >= 31
+                    || Build.VERSION.SDK_INT < 24
+                    || event.getAction() == DragEvent.ACTION_DRAG_STARTED
+                    || event.getLocalState() != null
+                    || ViewCompat.getOnReceiveContentMimeTypes(view) == null) {
+                return;
+            }
+            final Activity activity = tryGetActivity(view);
+            if (activity == null) {
+                return;
+            }
+            if (event.getAction() == DragEvent.ACTION_DROP) {
+                activity.requestDragAndDropPermissions(event);
+                ClipData clip = event.getClipData();
+                if (clip != null && clip.getItemCount() > 0 && clip.getDescription().hasMimeType("image/*")) {
+                    final ContentInfoCompat payload = new ContentInfoCompat.Builder(
+                            clip, ContentInfoCompat.SOURCE_DRAG_AND_DROP).build();
+                    ViewCompat.performReceiveContent(view, payload);
+                }
+            }
+        }
+
+        @Nullable
+        static Activity tryGetActivity(@NonNull View view) {
+            Context context = view.getContext();
+            while (context instanceof ContextWrapper) {
+                if (context instanceof Activity) {
+                    return (Activity) context;
+                }
+                context = ((ContextWrapper) context).getBaseContext();
+            }
+            return null;
+        }
     }
 }
