@@ -181,7 +181,7 @@ android {
 }
 
 dependencies {
-    lspatchImplementation 'de.upb.cs.swt:axml:2.1.2'
+    lspatchImplementation 'de.upb.cs.swt:axml:2.1.3'
     lspatchCompileOnly project(":hiddenapi-stubs")
 }
 
