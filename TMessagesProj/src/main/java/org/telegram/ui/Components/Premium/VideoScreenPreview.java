@@ -40,6 +40,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.io.File;
+import java.io.IOException;
 
 public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, NotificationCenter.NotificationCenterDelegate {
 
@@ -59,7 +60,11 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             retriever.setDataSource(ApplicationLoader.applicationContext, Uri.fromFile(file));
             int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
             int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
-            retriever.release();
+            try {
+                retriever.release();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             aspectRatio = width / (float) height;
 
             if (allowPlay) {
